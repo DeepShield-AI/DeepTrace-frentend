@@ -1,0 +1,63 @@
+[
+  {
+    "name": "root",
+    "value": 8624183,
+    "children": [
+      {
+        "name": "uiAqteesVipDZWyRCjDa9tNxUAwLpdi9EkBxKbCsYrIxg0rMLn6e7quhRtjkozOK",
+        "value": 8624183,
+        "children": [
+          {
+            "name": "K4TnFPVEcHHwF5N6PyXXImRw5tYMgK0MMqXRtdoAq9tF7QnnxfTSZCRbrGyNI77I",
+            "value": 2418612,
+            "children": [],
+            "trace_id": "b8760708d5d8cb0a",
+            "span_id": "K4TnFPVEcHHwF5N6PyXXImRw5tYMgK0MMqXRtdoAq9tF7QnnxfTSZCRbrGyNI77I",
+            "component_name": null,
+            "end_time": 1449519208174469,
+            "pid": 21206,
+            "child_ids": [
+              "c7Q9Xq4iWIX9biZatAuuNSaAki77phwVxMYljarLuwQpzN0WlRPXmWwAEWxbyzBf"
+            ],
+            "dst_ip": "172.20.0.19",
+            "duration": 2418612,
+            "src_ip": "172.20.0.22",
+            "src_port": 9090,
+            "start_time": 1449519205755857,
+            "endpoint": "ComposeText",
+            "protocol": "Thrift",
+            "parent_id": "uiAqteesVipDZWyRCjDa9tNxUAwLpdi9EkBxKbCsYrIxg0rMLn6e7quhRtjkozOK",
+            "tgid": 3008178,
+            "dst_port": 35814,
+            "direction": "Egress"
+          }
+        ],
+        "trace_id": "b8760708d5d8cb0a",
+        "span_id": "uiAqteesVipDZWyRCjDa9tNxUAwLpdi9EkBxKbCsYrIxg0rMLn6e7quhRtjkozOK",
+        "component_name": null,
+        "end_time": 1449519214105520,
+        "pid": 21204,
+        "child_ids": [
+          "K4TnFPVEcHHwF5N6PyXXImRw5tYMgK0MMqXRtdoAq9tF7QnnxfTSZCRbrGyNI77I",
+          "rcLR3qoy1aTcuWV4Xehf9LZlA8nvA0r6hlnkj6oaVQJ4ueKIRLDG0bytSut6CwSf",
+          "TEWQiLkOVbuueZ8NtlrhGO5zZ45wATiRjfOGAsXLChXYsGhJ64svOaUNl0rVGOPk",
+          "XS7ULOsX2GBLhszt0LiGVE12XU2H3ZIKRqIjkphdfYqdSHpmFCm0tnGkMUafIEKZ",
+          "Az1oyM6QmaXksxke8FUh8bsydNIZs7HjrfVTwiaptm1nYbYitzXdrj0eOhN4uDwL",
+          "piJFlk5mw61KIPICSu6qd68ttI5LAUR08Pcec8Z6JLwfTv4DO9CBCQuOyC8DRXon",
+          "KBTJTAF2EifVD1nuBu3WL0VXjaYqbAxcpVID0aissoK85YzFKuWDgSHl7h1Ks9gb"
+        ],
+        "dst_ip": "172.20.0.17",
+        "duration": 8624183,
+        "src_ip": "172.20.0.19",
+        "src_port": 9090,
+        "start_time": 1449519205481337,
+        "endpoint": "ComposePost",
+        "protocol": "Thrift",
+        "parent_id": null,
+        "tgid": 3008178,
+        "dst_port": 33448,
+        "direction": "Ingress"
+      }
+    ]
+  }
+]
