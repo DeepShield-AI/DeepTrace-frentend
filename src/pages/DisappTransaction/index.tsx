@@ -15,7 +15,8 @@ import {
     Table,
     TreeSelect,
     Space,
-    Card
+    Card,
+    Descriptions 
 } from 'antd'
 import * as echarts from 'echarts';
 import axios from 'axios';
@@ -38,6 +39,7 @@ import { CodeBlock } from 'react-code-blocks';
 
 import FlameGraph from "./component/flame.jsx";
 import FlameGraph2 from "./component/flame2.jsx";
+import {SPAN_OBJ_LIST} from "../../constant"
 
 
 // 请求方法
@@ -176,7 +178,33 @@ for (let i = 10; i < 36; i++) {
     label: i.toString(36) + i,
   });
 }
-
+const items = [
+    {
+      key: '1',
+      label: 'Product',
+      children: 'Cloud Database',
+    },
+    {
+      key: '2',
+      label: 'Billing Mode',
+      children: 'Prepaid',
+    },
+    {
+      key: '3',
+      label: 'Automatic Renewal',
+      children: 'YES',
+    },
+    {
+      key: '4',
+      label: 'Order time',
+      children: '2018-04-24 18:00:00',
+    },
+    {
+      key: '5',
+      label: 'Usage Time',
+      children: '2019-04-24 18:00:00',
+    },
+  ];
 const Monitor = () => {
 
 
@@ -223,7 +251,7 @@ const Monitor = () => {
               <Space size="middle">
                 <a onClick={() => {
                     getFlamegraphDataByTraceIdFun(record.traceId)
-                }}>Flame Graph Component</a>
+                }}>详情</a>
               </Space>
             ),
           },
@@ -239,6 +267,7 @@ const Monitor = () => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [distributeTabledDataSource, setDistributeTableDataSource] = useState([])
     const [flameTreeData, setFlameTreeData] = useState([])
+    const [descriptionData, setDescriptionData] = useState([])
     const [value, setValue] = useState();
     const onChange = (newValue) => {
         setValue(newValue);
@@ -293,12 +322,31 @@ const Monitor = () => {
             setIsDistributeTableLoading(false)
         }
     }
+
+    const setDescriptionDataBySpanId = (clickObj) => {
+        if(!clickObj) {
+            setDescriptionData([])
+            return
+        }
+        const spanList = []
+        Object.keys(clickObj).map(key => {
+            if(SPAN_OBJ_LIST.indexOf(key) !== -1) {
+                spanList.push({
+                    label: key,
+                    children: clickObj[key]
+                })
+            }
+        })
+        console.log(spanList, "000");
+        
+        setDescriptionData(spanList)
+    }
     return (
         <PageContainer
-            content="集群节点健康度"
+            content="调用链追踪"
         >
             <ProCard direction="column" ghost gutter={[0, 16]}>
-                <ProCard gutter={16} title="集群Trace记录">
+                <ProCard gutter={16} title="Trace记录">
                     <Table 
                         // rowSelection={rowSelection} 
                         columns={columns} 
@@ -314,12 +362,40 @@ const Monitor = () => {
                 <ProCard>
                     {
                         flameTreeData.length ? 
-                        <FlameGraph 
-                            data={flameTreeData} 
-                            width={900} 
-                            height={500}
-                            onClick={(node) => console.log('点击节点:', node)}
-                        /> :
+                        
+                        <ProCard>
+                            <ProCard colSpan={17}>
+                                <FlameGraph 
+                                    data={flameTreeData} 
+                                    width={800} 
+                                    height={400}
+                                    onClick={(node) => {
+                                        // console.log(node?.children[0]);
+                                        // const clickObj = node?.children[0]
+                                        // 点击节点添加到右边的列表
+                                        setDescriptionDataBySpanId(node)
+                                        console.log('点击节点:', node)
+                                    }}
+                                />
+                            </ProCard>
+                            <ProCard colSpan={7}>
+                                {
+                                    descriptionData?.length ? 
+                                        <Descriptions 
+                                            size='small' 
+                                            title="Span Info" 
+                                            layout="vertical"  
+                                            items={descriptionData} 
+                                            bordered
+                                        /> : 
+                                        <Card
+                                        >
+                                            <h2>点击火焰图查看Span详情</h2>
+                                        </Card>
+                                }
+                            </ProCard>
+                        </ProCard>
+                        :
                         <div style={{
                             width: "100%",
                             height: "100%",
@@ -343,14 +419,13 @@ const Monitor = () => {
                         </svg>                    
                     </ProCard>
                 </ProCard> */}
-                <ProCard gutter={16} title="JSON">
-                    {/* <Live scope={scope} code={codeString} /> */}
+                {/* <ProCard gutter={16} title="JSON">
                     <CodeBlock
                         language="javascript" // 指定代码语言
                         text={codeString}
                         showLineNumbers // 是否显示行号（这是一个布尔属性，不需要赋值）
                         />
-                </ProCard>
+                </ProCard> */}
             </ProCard>
         </PageContainer>
     )

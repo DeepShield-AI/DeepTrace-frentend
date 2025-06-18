@@ -11,6 +11,19 @@ const OVERVIEW_CARD_MAP = {
     totalTraffic: "总流量"
 } 
 
+const SPAN_OBJ_LIST = [
+    "endpoint",
+    "protocol",
+    "duration",
+    "tgid",
+    "pid",
+    "src_ip",
+    "src_port",
+    "dst_ip",
+    "dst_port",
+    "component_name",
+]
 export {
-    OVERVIEW_CARD_MAP
+    OVERVIEW_CARD_MAP,
+    SPAN_OBJ_LIST
 }

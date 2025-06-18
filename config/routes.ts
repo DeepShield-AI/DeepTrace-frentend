@@ -36,10 +36,19 @@ export default [
     }
     
   },
+  {
+    path: '/distributeApp/transaction',
+    name: '调用链追踪',
+    component: './DisappTransaction',
+    layout: {
+      hideMenu: false,
+      hideNav: true
+    }
+  },
   
   {
     path: '/distributeApp/safty',
-    name: '关键性能指标观测',
+    name: '关键性能指标观测-测试页面',
     component: './DisappSafty',
     layout: {
       hideMenu: false,
@@ -48,17 +57,8 @@ export default [
   },
   {
     path: '/distributeApp/service',
-    name: '服务健康度展示',
+    name: '服务健康度展示-测试页面',
     component: './DisappService',
-    layout: {
-      hideMenu: false,
-      hideNav: true
-    }
-  },
-  {
-    path: '/distributeApp/transaction',
-    name: '用户事务展示',
-    component: './DisappTransaction',
     layout: {
       hideMenu: false,
       hideNav: true

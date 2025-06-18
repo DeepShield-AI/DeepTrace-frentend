@@ -169,7 +169,8 @@ const FlameGraph = ({ data, width = 800, height = 400, minHeight = 18, onClick }
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             color: 'white',
             padding: '12px',
-            zIndex: 100
+            zIndex: 100,
+            width: "100%"
           }}
         >
           <h3>选中节点: {selectedNode.name}</h3>
