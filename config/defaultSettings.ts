@@ -17,10 +17,11 @@ const Settings: ProLayoutProps & {
   fixedHeader: false,
   fixSiderbar: true,
   colorWeak: false,
-  title: '网络设施防护平台-应用监测',
+  title: 'DeepTrace',
+  // title: '网络设施防护平台-应用监测',
   pwa: true,
   // logo: 'https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg',
-  logo: "https://sso.qcl.edu.cn/static/img/logo.772ab10c.png",
+  // logo: "https://sso.qcl.edu.cn/static/img/logo.772ab10c.png",
   iconfontUrl: '',
   splitMenus: false,
   token: {

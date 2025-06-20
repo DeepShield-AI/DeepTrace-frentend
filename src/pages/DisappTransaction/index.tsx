@@ -269,6 +269,11 @@ const Monitor = () => {
     const [flameTreeData, setFlameTreeData] = useState([])
     const [descriptionData, setDescriptionData] = useState([])
     const [value, setValue] = useState();
+    const [pagination, setPagination] = useState({
+        current: 1,       // 当前页码
+        pageSize: 10,     // 每页条数
+        total: 0,         // 总记录数
+    });
     const onChange = (newValue) => {
         setValue(newValue);
     };
@@ -292,8 +297,8 @@ const Monitor = () => {
         // getFlamegraphDataByTraceIdFun(traceId)
         // 请求表格数据
         getDistributeTableDataFun({
-            page: 1,
-            pageSize: 10
+            page: pagination.current || 1,
+            pageSize: pagination.pageSize || 10
         })
         
     }, [])
@@ -311,9 +316,17 @@ const Monitor = () => {
     const getDistributeTableDataFun = async (data) => {
         setIsDistributeTableLoading(true)
         try {
-            const res =  await getDistributeTableData(data)
+            const res =  await getDistributeTableData({
+                page: data.current || pagination.current,
+                pageSize: data.pageSize || pagination.pageSize
+            })
             const list = res?.data?.records
             console.log(list, "lll");
+            setPagination({
+                ...pagination,
+                current: data.current || pagination.current,
+                total: res?.data?.total
+            })
             setDistributeTableDataSource(list)
             
         } catch (error) {
@@ -341,6 +354,20 @@ const Monitor = () => {
         
         setDescriptionData(spanList)
     }
+
+    const handlePageChange = (pageParam) => {
+        console.log(pageParam, "11");
+        
+        // 保留当前分页参数，仅更新变化的部分
+        setPagination({
+            ...pagination,
+            current: pageParam.current,
+            pageSize: pageParam.pageSize,
+        });
+        
+        // 重新加载数据
+        getDistributeTableDataFun(pageParam);
+    }
     return (
         <PageContainer
             content="调用链追踪"
@@ -351,12 +378,10 @@ const Monitor = () => {
                         // rowSelection={rowSelection} 
                         columns={columns} 
                         dataSource={distributeTabledDataSource} 
-                        pagination={{
-                            position: ["topLeft"],
-                        }}
+                        pagination={pagination}
                         size="small"
                         loading={isDistributeTableLoading}
-                        
+                        onChange={handlePageChange}
                     />
                 </ProCard>
                 <ProCard>
