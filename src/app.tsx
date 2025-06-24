@@ -8,6 +8,7 @@ import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import React from 'react';
+import { message } from 'antd';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 
@@ -27,13 +28,17 @@ export async function getInitialState(): Promise<{
       });
       return msg.data;
     } catch (error) {
-      history.push(loginPath);
+      if(!window.isTest) {
+        history.push(loginPath);
+      } else {
+        message.show("以测试身份进入系统！")
+      }
     }
     return undefined;
   };
   // 如果不是登录页面，执行
   const { location } = history;
-  if (location.pathname !== loginPath) {
+  if (location.pathname !== loginPath && !window.isTest) {
     const currentUser = await fetchUserInfo();
     return {
       fetchUserInfo,
@@ -65,8 +70,11 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     onPageChange: () => {
       const { location } = history;
       // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && location.pathname !== loginPath) {
+      if (!initialState?.currentUser && location.pathname !== loginPath && !window.isTest) {
         history.push(loginPath);
+      } else {
+        console.log("当前以测试身份进入");
+        
       }
     },
     bgLayoutImgList: [

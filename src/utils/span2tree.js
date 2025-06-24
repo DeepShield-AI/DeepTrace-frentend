@@ -3,21 +3,32 @@ function transformToTree(spans) {
     const map = new Map();
     
     // 第一步：创建所有节点并放入映射表，保留原始字段
+    // const spans = spansList.map((spans_ori) => {
+    //     return {
+    //     ...spans_ori.metric,
+    //     ...spans_ori.content,
+    //     ...spans_ori.context,
+    //     ...spans_ori.tag.ebpf_tag
+    //     }
+    // })
     console.log(spans, "spans");
-    
     spans.forEach(span => {
         const node = {
-            name: span.endpoint ,
-            value: span.duration || 1, // 使用duration作为value，如果没有则默认为1
+            name: span?.endpoint,
+            value: span?.duration || 1, // 使用duration作为value，如果没有则默认为1
             // value: span.dst_port || 1, // 使用duration作为value，如果没有则默认为1
             children: [],
             ...span // 保留原始span的所有字段
         };
         map.set(span.span_id, node);
     });
+    console.log(map, "map");
+    
     
     // 第二步：构建树结构
     spans.forEach(span => {
+        console.log(span, "aa");
+        
         const node = map.get(span.span_id);
         if (!node) return;
         

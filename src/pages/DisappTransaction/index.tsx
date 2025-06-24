@@ -34,11 +34,15 @@ import stacks from "./stack.json"
 import testStacks from "./testStack.json"
 import testStack2 from "./testStack2.json"
 import {transformToTree} from "../../utils/span2tree.js"
+import { convertToGraphStructure } from '@/utils/convert2graph.js';
 
 import { CodeBlock } from 'react-code-blocks';
 
 import FlameGraph from "./component/flame.jsx";
 import FlameGraph2 from "./component/flame2.jsx";
+
+import GraphVisEGraphVisualizationxample from './component/dig-visualization/index.jsx';
+
 import {SPAN_OBJ_LIST} from "../../constant"
 
 
@@ -268,6 +272,21 @@ const Monitor = () => {
     const [distributeTabledDataSource, setDistributeTableDataSource] = useState([])
     const [flameTreeData, setFlameTreeData] = useState([])
     const [descriptionData, setDescriptionData] = useState([])
+    const [graphData, setGraphData] = useState({
+            nodes: [
+                { id: 1, label: '节点 1', title: '这是节点 1' },
+                { id: 2, label: '节点 2', title: '这是节点 2' },
+                { id: 3, label: '节点 3', title: '这是节点 3' },
+                { id: 4, label: '节点 4', title: '这是节点 4' },
+                { id: 5, label: '节点 5', title: '这是节点 5' }
+            ],
+            edges: [
+                { from: 1, to: 2, label: '边 1->2' },
+                { from: 1, to: 3, label: '边 1->3' },
+                { from: 2, to: 4, label: '边 2->4' },
+                { from: 2, to: 5, label: '边 2->5' }
+            ]
+        })
     const [value, setValue] = useState();
     const [pagination, setPagination] = useState({
         current: 1,       // 当前页码
@@ -305,11 +324,22 @@ const Monitor = () => {
 
     const getFlamegraphDataByTraceIdFun = async (traceId) => {
         const res = await getFlamegraphDataByTraceId(traceId)
-        const spans = res?.data?.records
-        console.log(spans, "rrrrr");
+        const spansList = res?.data?.records
+        console.log(spansList, "rrrrr");
+        const spans = spansList.map((spans_ori) => {
+            return {
+            ...spans_ori.metric,
+            ...spans_ori.content,
+            ...spans_ori.context,
+            ...spans_ori.tag.ebpf_tag
+            }
+        })
         const spansTree = transformToTree(spans)
         console.log(spansTree, testStacks, "rrr");
         setFlameTreeData(spansTree)
+
+        // const graphData = convertToGraphStructure(spans)
+        setGraphData(convertToGraphStructure(spans))
         
     }
 
@@ -383,6 +413,15 @@ const Monitor = () => {
                         loading={isDistributeTableLoading}
                         onChange={handlePageChange}
                     />
+                </ProCard>
+                <ProCard style={{
+                    maxHeight: 400,
+                    minHeight: 300
+                }}>
+                    <GraphVisEGraphVisualizationxample
+                        nodes={graphData.nodes}
+                        edges={graphData.edges}
+                    ></GraphVisEGraphVisualizationxample>
                 </ProCard>
                 <ProCard>
                     {

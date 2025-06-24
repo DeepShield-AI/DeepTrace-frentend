@@ -16,7 +16,7 @@ import {
   ProFormText,
 } from '@ant-design/pro-components';
 import { FormattedMessage, history, SelectLang, useIntl, useModel, Helmet } from '@umijs/max';
-import { Alert, message, Tabs } from 'antd';
+import { Alert, message, Tabs, Button } from 'antd';
 import Settings from '../../../../config/defaultSettings';
 import React, { useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -115,10 +115,16 @@ const Login: React.FC = () => {
   };
 
   const handleSubmit = async (values: API.LoginParams) => {
+    if(window.isTest) {
+        const urlParams = new URL(window.location.href).searchParams;
+        // history.push(urlParams.get('redirect') || '/');
+        history.push("/welcome");
+        return
+    }
     try {
       // 登录
       const msg = await login({ ...values, type });
-      if (msg.status === 'ok') {
+      if (msg.status === 'ok' || !window.isTest) {
         const defaultLoginSuccessMessage = intl.formatMessage({
           id: 'pages.login.success',
           defaultMessage: '登录成功！',
@@ -139,6 +145,8 @@ const Login: React.FC = () => {
       });
       console.log(error);
       message.error(defaultLoginFailureMessage);
+      window.isTest && history.push("/welcome");
+
     }
   };
   const { status, type: loginType } = userLoginState;
@@ -161,13 +169,14 @@ const Login: React.FC = () => {
           padding: '32px 0',
         }}
       >
+        
         <LoginForm
           contentStyle={{
             minWidth: 280,
             maxWidth: '75vw',
           }}
           logo={<img alt="logo" src="/logo.svg" />}
-          title="网络设施防范"
+          title="DeepTrace"
           subTitle={intl.formatMessage({ id: 'pages.layouts.userLayout.title' })}
           initialValues={{
             autoLogin: true,
@@ -179,6 +188,17 @@ const Login: React.FC = () => {
               defaultMessage="其他登录方式"
             />,
             <ActionIcons key="icons" />,
+            
+            <Button 
+              style={{
+                marginLeft: 20
+              }}
+              onClick={() => {
+                window.isTest = true
+              }}
+            >
+              设置当前为测试环境
+            </Button>
           ]}
           onFinish={async (values) => {
             await handleSubmit(values as API.LoginParams);

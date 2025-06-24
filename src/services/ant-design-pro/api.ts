@@ -8,6 +8,7 @@ export async function currentUser(options?: { [key: string]: any }) {
     data: API.CurrentUser;
   }>('/api/currentUser', {
     method: 'GET',
+    timeout: 2000,
     ...(options || {}),
   });
 }
