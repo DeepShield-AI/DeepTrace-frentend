@@ -21,7 +21,8 @@ function convertToGraphStructure(data) {
         nodes.push({
             id: spanIdToNodeId[span_id],
             label: component,
-            title: endpoint
+            title: endpoint,
+            ...item
         });
         
         // 处理父节点关系

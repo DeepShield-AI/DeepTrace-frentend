@@ -217,10 +217,12 @@ const GraphVisualization = ({ nodes, edges }) => {
                                 <div className="font-medium">{nodes.find(node => node.id === graphState.selectedNode)?.label}</div>
                             </div>
                         )}
-                        <div>
-                            <span className="text-gray-500 text-sm">ID:</span>
-                            <div className="font-medium">{graphState.selectedNode}</div>
-                        </div>
+                        {nodes.find(node => node.id === graphState.selectedNode)?.label && (
+                            <div>
+                                <span className="text-gray-500 text-sm">Protocol:</span>
+                                <div className="font-medium">{nodes.find(node => node.id === graphState.selectedNode)?.protocol}</div>
+                            </div>
+                        )}
                         {/* <div>
                             <span className="text-gray-500 text-sm">固定状态:</span>
                             <div className="font-medium">{
@@ -228,7 +230,7 @@ const GraphVisualization = ({ nodes, edges }) => {
                                     '已固定' : '未固定'
                             }</div>
                         </div> */}
-                        <button
+                        {/* <button
                             className="mt-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors w-full"
                             onClick={() => {
                                 const nodeId = graphState.selectedNode;
@@ -246,7 +248,7 @@ const GraphVisualization = ({ nodes, edges }) => {
                         >
                             {nodes.find(node => node.id === graphState.selectedNode)?.fixed ?
                                 '解锁此节点' : '固定此节点'}
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             )}

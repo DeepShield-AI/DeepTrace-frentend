@@ -272,21 +272,7 @@ const Monitor = () => {
     const [distributeTabledDataSource, setDistributeTableDataSource] = useState([])
     const [flameTreeData, setFlameTreeData] = useState([])
     const [descriptionData, setDescriptionData] = useState([])
-    const [graphData, setGraphData] = useState({
-            nodes: [
-                { id: 1, label: '节点 1', title: '这是节点 1' },
-                { id: 2, label: '节点 2', title: '这是节点 2' },
-                { id: 3, label: '节点 3', title: '这是节点 3' },
-                { id: 4, label: '节点 4', title: '这是节点 4' },
-                { id: 5, label: '节点 5', title: '这是节点 5' }
-            ],
-            edges: [
-                { from: 1, to: 2, label: '边 1->2' },
-                { from: 1, to: 3, label: '边 1->3' },
-                { from: 2, to: 4, label: '边 2->4' },
-                { from: 2, to: 5, label: '边 2->5' }
-            ]
-        })
+    const [graphData, setGraphData] = useState({})
     const [value, setValue] = useState();
     const [pagination, setPagination] = useState({
         current: 1,       // 当前页码
@@ -385,9 +371,7 @@ const Monitor = () => {
         setDescriptionData(spanList)
     }
 
-    const handlePageChange = (pageParam) => {
-        console.log(pageParam, "11");
-        
+    const handlePageChange = (pageParam) => {        
         // 保留当前分页参数，仅更新变化的部分
         setPagination({
             ...pagination,
@@ -416,12 +400,29 @@ const Monitor = () => {
                 </ProCard>
                 <ProCard style={{
                     maxHeight: 400,
-                    minHeight: 300
+                    // minHeight: 300
                 }}>
-                    <GraphVisEGraphVisualizationxample
-                        nodes={graphData.nodes}
-                        edges={graphData.edges}
-                    ></GraphVisEGraphVisualizationxample>
+                    {
+                        graphData?.nodes && graphData?.edges ? 
+                        <GraphVisEGraphVisualizationxample
+                            nodes={graphData.nodes}
+                            edges={graphData.edges}
+                        ></GraphVisEGraphVisualizationxample> :
+                        <div style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}>
+                            
+                            <Card
+                            >
+                                <h2>选择trace以查看有向无环图</h2>
+                            </Card>
+                        </div>
+                    }
+                    
                 </ProCard>
                 <ProCard>
                     {
