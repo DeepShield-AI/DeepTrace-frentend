@@ -98,12 +98,51 @@ const FlameGraph = ({ data, width = 800, height = 400, minHeight = 18, onClick }
     onClick?.(node); // 调用外部回调
   };
 
+    // 堆叠布局配置
+  const STACKED_LAYOUT_BASE_OFFSET = 20; // 层级基础偏移
+  const Y_SPACING = 5; // 节点垂直间距
+
+  // 计算堆叠布局的Y坐标
+  function calculateStackedY(node, allNodes) {
+    // 找到同一父节点下的所有兄弟节点
+    const parent = allNodes.find(n => n.children && n.children.includes(node));
+    const siblings = parent ? parent.children : allNodes.filter(n => n.depth === node.depth);
+    
+    // 找到当前节点在兄弟中的索引
+    const siblingIndex = siblings.indexOf(node);
+    
+    // 计算同一父节点下前面兄弟节点的总高度
+    const previousHeights = siblings.slice(0, siblingIndex).reduce((sum, n) => sum + n.height + Y_SPACING, 0);
+    
+    // 如果是根节点，直接从顶部开始
+    if (!parent) {
+      return previousHeights;
+    }
+    
+    // 非根节点的Y坐标 = 父节点Y坐标 + 父节点高度 + 间距 + 前面兄弟的总高度
+    const parentNode = allNodes.find(n => n.name === parent.name);
+    return parentNode.y + parentNode.height + Y_SPACING + previousHeights;
+  }
+
+  // 可能需要调整节点宽度计算函数（如果需要等宽显示）
+  function calculateStackedWidth(node, allNodes) {
+    const sameDepthNodes = allNodes.filter(n => n.depth === node.depth);
+    const totalValue = sameDepthNodes.reduce((sum, n) => sum + n.value, 0);
+    
+    // 等宽模式（所有同层级节点宽度相同）
+    const availableWidth = width - (node.depth * STACKED_LAYOUT_BASE_OFFSET);
+    return availableWidth / sameDepthNodes.length;
+    
+    // 或者保持比例宽度
+    // return (node.value / totalValue) * availableWidth;
+  }
+
   return (
     <div 
       style={{ width, height, overflow: 'hidden', position: 'relative' }}
       // onWheel={handleWheel} //取消缩放功能
     >
-      <svg 
+      {/* <svg 
         ref={svgRef}
         width={width} 
         height={height}
@@ -139,8 +178,63 @@ const FlameGraph = ({ data, width = 800, height = 400, minHeight = 18, onClick }
             </g>
           ))}
         </g>
+      </svg> */}
+      <svg 
+        ref={svgRef}
+        width={width} 
+        height={height}
+        onMouseDown={handleDragStart}
+      >
+        <g transform={`translate(${transform.x}, ${transform.y}) scale(${1/transform.scale})`}>
+          {visibleNodes.map((node, index) => {
+            // 计算堆叠布局的节点坐标
+            const stackedNode = { ...node };
+            
+            // 1. 确定当前节点的层级（深度）
+            const depth = node.depth || 0;
+            
+            // 2. 计算同一层级中前面节点的总宽度
+            const sameDepthNodes = visibleNodes.filter(n => n.depth === depth);
+            const previousNodesInSameDepth = sameDepthNodes.slice(0, sameDepthNodes.indexOf(node));
+            const previousWidths = previousNodesInSameDepth.reduce((sum, n) => sum + n.width, 0);
+            
+            // 3. 堆叠布局的x坐标 = 层级*基础偏移 + 同层级前面节点的总宽度
+            stackedNode.x = depth * STACKED_LAYOUT_BASE_OFFSET + previousWidths;
+            
+            // 4. y坐标基于层级和堆叠顺序计算
+            stackedNode.y = calculateStackedY(node, visibleNodes);
+            
+            return (
+              <g key={node.name}>
+                <rect
+                  x={stackedNode.x}
+                  y={stackedNode.y}
+                  width={stackedNode.width}
+                  height={stackedNode.height}
+                  fill={getColor(stackedNode, stackedNode.depth)}
+                  stroke="#333"
+                  strokeWidth={0.5}
+                  onMouseEnter={() => setHoveredNode(stackedNode)}
+                  onMouseLeave={() => setHoveredNode(null)}
+                  onClick={(e) => handleNodeClick(stackedNode, e)}
+                  style={{ cursor: 'pointer' }}
+                />
+                {stackedNode.width > 20 && (
+                  <text
+                    x={stackedNode.x + 5}
+                    y={stackedNode.y + stackedNode.height - 5}
+                    fontSize={12}
+                    fill={stackedNode === selectedNode ? '#fff' : '#333'}
+                    pointerEvents="none"
+                  >
+                    {stackedNode.name} ({stackedNode.value})
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
       </svg>
-      
       {hoveredNode && (
         <div 
           style={{

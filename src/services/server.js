@@ -41,10 +41,12 @@ const getDistributeTableData = async (queryData) => {
         const {
             page=1,
             pageSize=10,
+            
         } = queryData
         const res = await axios.post("http://localhost:8080/distributeList", {
-            page,
-            pageSize
+            // page,
+            // pageSize,
+            ...queryData
         })
         const {data = {}} = res
         return data

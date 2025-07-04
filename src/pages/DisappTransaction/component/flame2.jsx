@@ -1,278 +1,200 @@
-import React, { useState, useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
+// 堆叠式火焰图完整实现
+import React, { useState, useRef, useEffect } from 'react';
 
-const FlameGraph = ({ data, width = 800, height = 600, minHeight = 20, onClick }) => {
+function StackedFlameGraph({ data, width = 800, height = 600 }) {
   const svgRef = useRef(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const [selectedNode, setSelectedNode] = useState(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
   const [visibleNodes, setVisibleNodes] = useState([]);
-  const [timeRange, setTimeRange] = useState({ min: 0, max: 1 });
 
-  // 计算时间范围
-  useEffect(() => {
-    if (!data || data.length === 0) return;
-
-    let minTime = Infinity;
-    let maxTime = -Infinity;
-
-    function traverse(node) {
-      if (node.start_time !== undefined) {
-        minTime = Math.min(minTime, node.start_time);
-        maxTime = Math.max(maxTime, node.start_time + (node.duration || 0));
-      }
-      
-      if (node.children && node.children.length > 0) {
-        node.children.forEach(child => traverse(child));
+  // 计算节点在堆叠火焰图中的位置
+  const calculateStackPosition = (node, allNodes, index) => {
+    // 首先过滤出同一父节点的所有子节点
+    const siblings = allNodes.filter(n => n.parent === node.parent);
+    
+    // 计算当前节点在兄弟中的索引
+    const siblingIndex = siblings.findIndex(s => s === node);
+    
+    // 基础位置计算 - 水平位置由层级深度决定
+    let x = 0;
+    if (node.parent) {
+      const parentNode = allNodes.find(n => n.name === node.parent);
+      if (parentNode) {
+        x = parentNode.x;
       }
     }
-
-    data.forEach(root => traverse(root));
-    setTimeRange({ min: minTime, max: maxTime });
-  }, [data]);
-
-  // 计算节点的位置和尺寸
-  useEffect(() => {
-    if (!data || data.length === 0 || timeRange.max <= timeRange.min) return;
-
-    const totalWidth = width * transform.scale;
-    const timeSpan = timeRange.max - timeRange.min;
-    const nodes = [];
-
-    function traverse(node, depth, parentStartTime = timeRange.min) {
-      const startTime = node.start_time !== undefined ? node.start_time : parentStartTime;
-      const nodeWidth = ((node.duration || 0) / timeSpan) * totalWidth;
-      const x = ((startTime - timeRange.min) / timeSpan) * totalWidth;
-      
-      if (nodeWidth < 1) return; // 宽度太小则不显示
-
-      const y = depth * minHeight;
-      const height = minHeight;
-
-      nodes.push({
-        ...node,
-        x,
-        y,
-        width: nodeWidth,
-        height,
-        depth
-      });
-
-      if (node.children && node.children.length > 0) {
-        // 按startTime排序子节点
-        const sortedChildren = [...node.children].sort((a, b) => {
-          const timeA = a.start_time !== undefined ? a.start_time : 0;
-          const timeB = b.start_time !== undefined ? b.start_time : 0;
-          return timeA - timeB;
-        });
-        
-        sortedChildren.forEach(child => {
-          traverse(child, depth + 1, startTime);
-        });
+    
+    // 垂直位置由兄弟节点堆叠决定
+    let y = 0;
+    if (siblingIndex > 0) {
+      // 获取前一个兄弟节点
+      const prevSibling = siblings[siblingIndex - 1];
+      y = prevSibling.y + prevSibling.height;
+    } else if (node.parent) {
+      // 第一个子节点位于父节点下方
+      const parentNode = allNodes.find(n => n.name === node.parent);
+      if (parentNode) {
+        y = parentNode.y + parentNode.height;
       }
     }
-
-    data.forEach(root => traverse(root, 0));
-    setVisibleNodes(nodes);
-  }, [data, width, height, minHeight, transform, timeRange]);
-
-  // 处理缩放和平移
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const { deltaY } = e;
-    const newScale = transform.scale * (deltaY < 0 ? 1.1 : 0.9);
-    setTransform(prev => ({
-      ...prev,
-      scale: Math.max(0.1, Math.min(10, newScale))
-    }));
+    
+    // 宽度计算 - 子节点宽度按比例分配父节点宽度
+    let width = node.width;
+    if (node.parent) {
+      const parentNode = allNodes.find(n => n.name === node.parent);
+      if (parentNode) {
+        // 计算所有子节点的总价值，用于比例分配
+        const totalSiblingValue = siblings.reduce((sum, s) => sum + s.value, 0);
+        if (totalSiblingValue > 0) {
+          width = parentNode.width * (node.value / totalSiblingValue);
+        }
+      }
+    }
+    
+    return {
+      x,
+      y,
+      width,
+      height: node.height || 20
+    };
   };
 
-  const handleDragStart = (e) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const { x, y } = transform;
-
-    const handleDrag = (moveEvent) => {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
-      setTransform({
-        x: x + dx,
-        y: y + dy,
-        scale: transform.scale
-      });
-    };
-
-    const handleDragEnd = () => {
-      document.removeEventListener('mousemove', handleDrag);
-      document.removeEventListener('mouseup', handleDragEnd);
-    };
-
-    document.addEventListener('mousemove', handleDrag);
-    document.addEventListener('mouseup', handleDragEnd);
-  };
-
-  // 颜色生成函数
+  // 获取节点颜色
   const getColor = (node, depth) => {
-    if (node === selectedNode) return '#ff5555'; // 选中节点颜色
-    if (node === hoveredNode) return '#ffaa99'; // 高亮颜色
-    const hue = (depth * 30) % 360; // 根据深度生成不同色调
-    return `hsl(${hue}, 70%, 60%)`;
+    // 简单的颜色渐变，深度越深颜色越重
+    const hue = 200 - depth * 20; // 从蓝色到绿色渐变
+    return `hsl(${hue}, 70%, ${50 + depth * 5}%)`;
   };
 
   // 处理节点点击
   const handleNodeClick = (node, e) => {
-    e.stopPropagation(); // 防止触发拖拽
-    setSelectedNode(node === selectedNode ? null : node); // 切换选中状态
-    onClick?.(node); // 调用外部回调
-  };
-
-  // 格式化时间
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp / 1000); // 假设时间戳是纳秒，转换为毫秒
-    return date.toISOString().slice(11, -1); // 只显示时间部分
-  };
-
-  // 生成时间轴标记
-  const generateTimeMarkers = () => {
-    if (timeRange.max <= timeRange.min) return [];
+    e.stopPropagation();
+    setSelectedNode(prev => (prev === node ? null : node));
     
-    const markers = [];
-    const timeSpan = timeRange.max - timeRange.min;
-    const numMarkers = 5; // 默认为5个标记
-    
-    for (let i = 0; i <= numMarkers; i++) {
-      const position = (i / numMarkers) * width;
-      const time = timeRange.min + (i / numMarkers) * timeSpan;
-      
-      markers.push(
-        <g key={i}>
-          <line 
-            x1={position} 
-            y1={0} 
-            x2={position} 
-            y2={10} 
-            stroke="#999" 
-            strokeWidth={1} 
-          />
-          <text 
-            x={position} 
-            y={25} 
-            fontSize={10} 
-            textAnchor="middle" 
-            fill="#333"
-          >
-            {formatTime(time)}
-          </text>
-        </g>
-      );
+    // 可添加展开/折叠子节点的逻辑
+    if (node.children && node.children.length > 0) {
+      // 这里可以实现展开或折叠子节点的功能
     }
-    
-    return markers;
   };
+
+  // 处理拖拽开始
+  const handleDragStart = (e) => {
+    // 拖拽功能实现
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startTransform = { ...transform };
+    
+    const handleDrag = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      setTransform({
+        x: startTransform.x + dx,
+        y: startTransform.y + dy,
+        scale: transform.scale
+      });
+    };
+    
+    const handleDragEnd = () => {
+      document.removeEventListener('mousemove', handleDrag);
+      document.removeEventListener('mouseup', handleDragEnd);
+    };
+    
+    document.addEventListener('mousemove', handleDrag);
+    document.addEventListener('mouseup', handleDragEnd);
+  };
+
+  // 初始化数据 - 处理数据为适合堆叠火焰图的格式
+  useEffect(() => {
+    if (data && data.length > 0) {
+      // 这里假设data是一个节点数组，每个节点有name, value, parent, children等属性
+      // 实际使用中可能需要根据你的数据结构调整
+      
+      // 简单示例：为每个节点计算基本尺寸
+      const processedNodes = data.map(node => ({
+        ...node,
+        // 假设value代表节点大小，转换为像素宽度
+        width: node.value / 10, // 示例转换，根据实际数据调整
+        height: 20, // 固定高度或根据需要调整
+        x: 0, // 初始x坐标，由calculateStackPosition计算
+        y: 0  // 初始y坐标，由calculateStackPosition计算
+      }));
+      
+      setVisibleNodes(processedNodes);
+    }
+  }, [data]);
 
   return (
-    <div 
-      style={{ width, height, overflow: 'hidden', position: 'relative' }}
-      onWheel={handleWheel}
+    <svg 
+      ref={svgRef}
+      width={width} 
+      height={height}
+      onMouseDown={handleDragStart}
     >
-      <svg 
-        ref={svgRef}
-        width={width} 
-        height={height}
-        onMouseDown={handleDragStart}
-      >
-        {/* 时间轴 */}
-        <g transform={`translate(${transform.x}, ${transform.y}) scale(${1/transform.scale})`}>
-          <line x1={0} y1={0} x2={width} y2={0} stroke="#333" strokeWidth={1} />
-          {generateTimeMarkers()}
-        </g>
-        
-        {/* 火焰图 */}
-        <g transform={`translate(${transform.x}, ${transform.y + 30}) scale(${1/transform.scale})`}>
-          {visibleNodes.map(node => (
+      <g transform={`translate(${transform.x}, ${transform.y}) scale(${1/transform.scale})`}>
+        {visibleNodes.map((node, index) => {
+          // 1. 复制节点数据并计算堆叠布局坐标
+          const stackedNode = { ...node };
+          const { depth, value, children = [] } = node;
+          
+          // 2. 计算水平偏移：层级越深，水平偏移越大
+          const HORIZONTAL_PADDING = 20; // 层级间水平间隔
+          stackedNode.x = depth * HORIZONTAL_PADDING;
+          
+          // 3. 计算垂直位置：同层级节点按顺序堆叠
+          const STACKED_Y_PADDING = 5; // 节点垂直间隔
+          const siblingNodes = visibleNodes.filter(n => n.depth === depth && n.parent === node.parent);
+          const siblingIndex = siblingNodes.findIndex(n => n.name === node.name);
+          
+          // 若为根节点（无父节点），从y=0开始堆叠
+          if (!node.parent) {
+            stackedNode.y = siblingIndex * (node.height + STACKED_Y_PADDING);
+          } else {
+            // 非根节点：y坐标为父节点底部 + 间隔
+            const parentNode = visibleNodes.find(n => n.name === node.parent);
+            stackedNode.y = parentNode.y + parentNode.height + STACKED_Y_PADDING;
+          }
+          
+          // 4. 堆叠布局中，节点宽度由父层级或全局比例决定
+          // 示例：同层级节点等宽，宽度为剩余空间 / 同层级节点数
+          const TOTAL_SIBLINGS = siblingNodes.length;
+          if (TOTAL_SIBLINGS > 0) {
+            const AVAILABLE_WIDTH = width - (depth + 1) * HORIZONTAL_PADDING;
+            stackedNode.width = AVAILABLE_WIDTH / TOTAL_SIBLINGS;
+          }
+          
+          return (
             <g key={node.name}>
               <rect
-                x={node.x}
-                y={node.y}
-                width={node.width}
-                height={node.height}
-                fill={getColor(node, node.depth)}
+                x={stackedNode.x}
+                y={stackedNode.y}
+                width={stackedNode.width}
+                height={stackedNode.height}
+                fill={getColor(stackedNode, stackedNode.depth)}
                 stroke="#333"
                 strokeWidth={0.5}
-                onMouseEnter={() => setHoveredNode(node)}
+                onMouseEnter={() => setHoveredNode(stackedNode)}
                 onMouseLeave={() => setHoveredNode(null)}
-                onClick={(e) => handleNodeClick(node, e)}
+                onClick={(e) => handleNodeClick(stackedNode, e)}
                 style={{ cursor: 'pointer' }}
               />
-              {node.width > 30 && (
+              {stackedNode.width > 20 && (
                 <text
-                  x={node.x + 5}
-                  y={node.y + node.height - 5}
+                  x={stackedNode.x + 5}
+                  y={stackedNode.y + stackedNode.height - 5}
                   fontSize={12}
-                  fill={node === selectedNode ? '#fff' : '#333'}
+                  fill={stackedNode === selectedNode ? '#fff' : '#333'}
                   pointerEvents="none"
                 >
-                  {node.name.substring(0, 15)} ({node.duration})
+                  {stackedNode.name} ({stackedNode.value})
                 </text>
               )}
             </g>
-          ))}
-        </g>
-      </svg>
-      
-      {hoveredNode && (
-        <div 
-          style={{
-            position: 'absolute',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            padding: '8px',
-            borderRadius: '4px',
-            pointerEvents: 'none',
-            zIndex: 100
-          }}
-        >
-          <div><strong>{hoveredNode.name}</strong></div>
-          <div>开始时间: {formatTime(hoveredNode.start_time)}</div>
-          <div>结束时间: {formatTime(hoveredNode.start_time + hoveredNode.duration)}</div>
-          <div>持续时间: {hoveredNode.duration}</div>
-          {hoveredNode.depth !== undefined && <div>层级: {hoveredNode.depth}</div>}
-        </div>
-      )}
-      
-      {selectedNode && (
-        <div 
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            padding: '12px',
-            zIndex: 100
-          }}
-        >
-          <h3>选中节点: {selectedNode.name}</h3>
-          <div>开始时间: {formatTime(selectedNode.start_time)}</div>
-          <div>结束时间: {formatTime(selectedNode.start_time + selectedNode.duration)}</div>
-          <div>持续时间: {selectedNode.duration}</div>
-          <div>层级: {selectedNode.depth}</div>
-          <div>子节点数量: {selectedNode.children?.length || 0}</div>
-        </div>
-      )}
-    </div>
+          );
+        })}
+      </g>
+    </svg>
   );
-};
+}
 
-FlameGraph.propTypes = {
-  data: PropTypes.array.isRequired,
-  width: PropTypes.number,
-  height: PropTypes.number,
-  minHeight: PropTypes.number,
-  onClick: PropTypes.func
-};
-
-export default FlameGraph;    
+export default StackedFlameGraph;

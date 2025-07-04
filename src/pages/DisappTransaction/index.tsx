@@ -46,6 +46,7 @@ import GraphVisEGraphVisualizationxample from './component/dig-visualization/ind
 import {SPAN_OBJ_LIST} from "../../constant"
 
 
+
 // 请求方法
 import { getDistributeTableData, getFlamegraphDataByTraceId } from "../../services/server.js"
 import { render } from '@testing-library/react';
@@ -224,6 +225,7 @@ const Monitor = () => {
         {
           title: 'clientPort',
           dataIndex: 'clientPort',
+          search: false
         },
         {
           title: 'serverIp',
@@ -231,22 +233,34 @@ const Monitor = () => {
         },
         {
             title: 'serverPort',
-            dataIndex: 'serverPort'
+            dataIndex: 'serverPort',
+            search: false
         },
         {
             title: 'duration',
             dataIndex: 'e2eDuration',
             render: (_) => {
                 return `${_} ms`
-            }
+            },
+            search: false
         },
         {
             title: 'protocol',
-            dataIndex: 'protocol'
+            dataIndex: 'protocol',
+            search: {
+                el: "select",
+                props: {
+                    options: [
+                        {label: "Thrift", value: "Thrift"},
+                        {label: "Thrift", value: "Thrift"}
+                    ]
+                }
+            }
         },
         {
           title: 'statusCode',
           dataIndex: 'statusCode',
+          search: false
         },
         {
             title: 'Action',
@@ -258,6 +272,7 @@ const Monitor = () => {
                 }}>详情</a>
               </Space>
             ),
+            search:false
           },
       ];
 
@@ -297,16 +312,16 @@ const Monitor = () => {
         onChange: onSelectChange,
     };
 
-    useEffect(() => {
-        // console.log("resres");
-        // getFlamegraphDataByTraceIdFun(traceId)
-        // 请求表格数据
-        getDistributeTableDataFun({
-            page: pagination.current || 1,
-            pageSize: pagination.pageSize || 10
-        })
+    // useEffect(() => {
+    //     // console.log("resres");
+    //     // getFlamegraphDataByTraceIdFun(traceId)
+    //     // 请求表格数据
+    //     getDistributeTableDataFun({
+    //         page: pagination.current || 1,
+    //         pageSize: pagination.pageSize || 10
+    //     })
         
-    }, [])
+    // }, [])
 
     const getFlamegraphDataByTraceIdFun = async (traceId) => {
         const res = await getFlamegraphDataByTraceId(traceId)
@@ -334,7 +349,9 @@ const Monitor = () => {
         try {
             const res =  await getDistributeTableData({
                 page: data.current || pagination.current,
-                pageSize: data.pageSize || pagination.pageSize
+                pageSize: data.pageSize || pagination.pageSize,
+                // traceId: "26c2443cc01b783f",
+                protocol: "Thrift"
             })
             const list = res?.data?.records
             console.log(list, "lll");
@@ -388,14 +405,52 @@ const Monitor = () => {
         >
             <ProCard direction="column" ghost gutter={[0, 16]}>
                 <ProCard gutter={16} title="Trace记录">
-                    <Table 
+                    <ProTable 
                         // rowSelection={rowSelection} 
+                        request={async (params, sorter, filter) => {
+                            // 表单搜索项会从 params 传入，传递给后端接口。
+                            console.log(params, sorter, filter, "aaa-----");
+                            // return Promise.resolve({
+                            // data: tableListDataSource,
+                            // success: true,
+                            // });
+                            try {
+                                const res =  await getDistributeTableData({
+                                    ...params,
+                                    page: params.current || pagination.current,
+                                    pageSize: params.pageSize || pagination.pageSize,
+                                    // traceId: "26c2443cc01b783f",
+                                    // protocol: "Thrift"
+                                })
+                                const list = res?.data?.records
+                                console.log(list, "lll");
+                                setPagination({
+                                    ...pagination,
+                                    current: params.current || pagination.current,
+                                    total: res?.data?.total
+                                })
+                                setDistributeTableDataSource(list)
+                                return list
+                            } catch (error) {
+                                console.error("==error==", error)
+                            } finally {
+                                setIsDistributeTableLoading(false)
+                            }
+                        }}
                         columns={columns} 
                         dataSource={distributeTabledDataSource} 
                         pagination={pagination}
-                        size="small"
-                        loading={isDistributeTableLoading}
-                        onChange={handlePageChange}
+                        search={{
+                            optionRender: false,
+                            collapsed: false,
+                        }}
+                        // onLoad={isDistributeTableLoading}
+                        // pagination={{
+                        //     showQuickJumper: true,
+                        // }}
+                        // size="small"
+                        // loading={isDistributeTableLoading}
+                        // onChange={handlePageChange}
                     />
                 </ProCard>
                 <ProCard style={{
