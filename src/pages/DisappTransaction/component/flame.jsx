@@ -81,18 +81,56 @@ const FlameGraph = ({ data, width = 800, height = 400, minHeight = 18, onClick }
     document.addEventListener('mouseup', handleDragEnd);
   };
 
-  // 颜色生成函数
-  const getColor = (node, depth) => {
-    if (node === selectedNode) return '#ff5555'; // 选中节点颜色
-    if (node === hoveredNode) return '#ffaa99'; // 高亮颜色
-    const hue = (depth * 30) % 360; // 根据深度生成不同色调
+  // // 颜色生成函数
+  // const getColor = (node, depth) => {
+  //   if (node === selectedNode) return '#ff5555'; // 选中节点颜色
+  //   if (node === hoveredNode) return '#ffaa99'; // 高亮颜色
+  //   const hue = (depth * 30) % 360; // 根据深度生成不同色调
+  //   return `hsl(${hue}, 70%, 60%)`;
+  // };
+
+  // 增强版颜色生成函数
+const getColor = (node, depth) => {
+  if (node === selectedNode) return '#FF3A5E'; // 选中节点：鲜艳的珊瑚红，吸引注意力
+  if (node === hoveredNode) return '#FF8A65'; // 悬停节点：温暖的橙色，提供交互反馈
+  
+  // 根据深度生成渐变色系
+  // 浅色系：深度0-2使用柔和的蓝绿色调，适合根节点
+  if (depth <= 2) {
+    const hue = 180 - (depth * 20); // 从蓝绿色过渡到青色
+    return `hsl(${hue}, 75%, 65%)`;
+  }
+  // 中色系：深度3-5使用活力的蓝紫色调，适合中间层
+  else if (depth <= 5) {
+    const hue = 240 - (depth * 15); // 从靛蓝色过渡到紫色
     return `hsl(${hue}, 70%, 60%)`;
-  };
+  }
+  // 深色系：深度6+使用浓郁的紫色调，适合叶子节点
+  else {
+    const hue = 270 - Math.min((depth - 6) * 10, 30); // 从紫色过渡到深紫
+    return `hsl(${hue}, 65%, 55%)`;
+  }
+};
+
+  // 专业数据可视化风格的颜色生成函数
+  // const getColor = (node, depth) => {
+  //   if (node === selectedNode) return '#4E90E8'; // 选中节点：专业蓝色，传达可靠感
+  //   if (node === hoveredNode) return '#93C5FD'; // 悬停节点：浅蓝色，提供柔和反馈
+    
+  //   // 根据深度生成从灰到蓝的渐变色
+  //   const baseHue = 50; // 蓝色系基础色调
+  //   const depthFactor = Math.min(depth * 0.15, 0.5); // 深度因子，最大0.7
+    
+  //   // 计算亮度和饱和度，深度越大颜色越深
+  //   const lightness = 80 - (depthFactor * 25); // 从80%亮度递减到55%
+  //   const saturation = 20 + (depthFactor * 50); // 从20%饱和度递增到70%
+    
+  //   return `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
+  // };
 
   // 处理节点点击
   const handleNodeClick = (node, e) => {
     e.stopPropagation(); // 防止触发拖拽
-    console.log(node,e, "-----");
     
     setSelectedNode(node === selectedNode ? null : node); // 切换选中状态
     onClick?.(node); // 调用外部回调

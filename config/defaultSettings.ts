@@ -7,13 +7,19 @@ const Settings: ProLayoutProps & {
   pwa?: boolean;
   logo?: string;
 } = {
-  // navTheme: 'realDark',
-  navTheme: 'light',
+  navTheme: 'realDark',
+  // navTheme: 'dark',
+
+  // navTheme: 'light',
   // 拂晓蓝
   colorPrimary: '#1890ff',
   layout: 'mix',
+  // layout: "none",
+  // layout: ,
   // layout: 'top',
   contentWidth: 'Fluid',
+  menuRender: false, // 控制隐藏菜单
+  // headerRender: true,
   fixedHeader: false,
   fixSiderbar: true,
   colorWeak: false,

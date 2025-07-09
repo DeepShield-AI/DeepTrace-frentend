@@ -14,7 +14,6 @@ const getAllOverView = async () => {
             return overviewGetAllMockData
         }
         const res = await axios.get("http://10.4.10.24:8888/api/overview/getAll")
-        console.log(res, "sssss");
         const {data = {}} = res
         return isMock ? overviewGetAllMockData : data
     } catch (error) {
@@ -28,7 +27,6 @@ const getIPData = async () => {
             return accessGetAllMockData
         }
         const res = await axios.get("http://10.4.10.24:8888/api/access/getAll")
-        console.log(res, "sssss");
         const {data = {}} = res
         return isMock ? accessGetAllMockData : data
     } catch (error) {
@@ -62,7 +60,6 @@ const getFlamegraphDataByTraceId = async (traceId) => {
         }
       })
     const {data = {}} = res
-    // console.log(data, "resres");
     return data
     
 }

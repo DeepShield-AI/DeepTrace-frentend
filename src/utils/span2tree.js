@@ -11,7 +11,6 @@ function transformToTree(spans) {
     //     ...spans_ori.tag.ebpf_tag
     //     }
     // })
-    console.log(spans, "spans");
     spans.forEach(span => {
         const node = {
             name: span?.endpoint,
@@ -22,13 +21,10 @@ function transformToTree(spans) {
         };
         map.set(span.span_id, node);
     });
-    console.log(map, "map");
     
     
     // 第二步：构建树结构
-    spans.forEach(span => {
-        console.log(span, "aa");
-        
+    spans.forEach(span => {        
         const node = map.get(span.span_id);
         if (!node) return;
         

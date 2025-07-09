@@ -10,7 +10,9 @@ import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import React from 'react';
 import { message } from 'antd';
 const isDev = process.env.NODE_ENV === 'development';
-const loginPath = '/user/login';
+// const loginPath = '/user/login';
+const loginPath = '/distributeApp/transaction';
+
 
 /**
  * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state

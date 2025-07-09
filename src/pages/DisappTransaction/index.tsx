@@ -16,7 +16,8 @@ import {
     TreeSelect,
     Space,
     Card,
-    Descriptions 
+    Descriptions,
+    Image
 } from 'antd'
 import * as echarts from 'echarts';
 import axios from 'axios';
@@ -44,6 +45,7 @@ import FlameGraph2 from "./component/flame2.jsx";
 import GraphVisEGraphVisualizationxample from './component/dig-visualization/index.jsx';
 
 import {SPAN_OBJ_LIST} from "../../constant"
+import introImg from "../../assets/images/introduce.png"
 
 
 
@@ -304,7 +306,6 @@ const Monitor = () => {
     
 
     const onSelectChange = (newSelectedRowKeys) => {
-        console.log('selectedRowKeys changed: ', newSelectedRowKeys);
         setSelectedRowKeys(newSelectedRowKeys);
     };
     const rowSelection = {
@@ -312,21 +313,9 @@ const Monitor = () => {
         onChange: onSelectChange,
     };
 
-    // useEffect(() => {
-    //     // console.log("resres");
-    //     // getFlamegraphDataByTraceIdFun(traceId)
-    //     // 请求表格数据
-    //     getDistributeTableDataFun({
-    //         page: pagination.current || 1,
-    //         pageSize: pagination.pageSize || 10
-    //     })
-        
-    // }, [])
-
     const getFlamegraphDataByTraceIdFun = async (traceId) => {
         const res = await getFlamegraphDataByTraceId(traceId)
         const spansList = res?.data?.records
-        console.log(spansList, "rrrrr");
         const spans = spansList.map((spans_ori) => {
             return {
             ...spans_ori.metric,
@@ -336,7 +325,6 @@ const Monitor = () => {
             }
         })
         const spansTree = transformToTree(spans)
-        console.log(spansTree, testStacks, "rrr");
         setFlameTreeData(spansTree)
 
         // const graphData = convertToGraphStructure(spans)
@@ -354,7 +342,6 @@ const Monitor = () => {
                 protocol: "Thrift"
             })
             const list = res?.data?.records
-            console.log(list, "lll");
             setPagination({
                 ...pagination,
                 current: data.current || pagination.current,
@@ -382,9 +369,7 @@ const Monitor = () => {
                     children: clickObj[key]
                 })
             }
-        })
-        console.log(spanList, "000");
-        
+        })        
         setDescriptionData(spanList)
     }
 
@@ -404,6 +389,21 @@ const Monitor = () => {
             content="调用链追踪"
         >
             <ProCard direction="column" ghost gutter={[0, 16]}>
+                <ProCard collapsible>
+                    <ProCard>   
+                        <text style={{fontSize:16}}>
+                            SocialNetwork is an end-to-end microservice in DeathStarBench with similar functionality to Twitter or Facebook to share posts, follow friends, view the followed posts, and browse the homepages of others. It consists of 26 individual services, including Nginx as the web server, tens of Thrift microservices for processing business logic, Memcached and Redis for caching, MongoDB for persistent storage, and RebbitMQ for asynchronous messaging. We load the system with Socfb-Reed98 Facebook social network dataset [60] as the social graph and use wrk2 [1] as the HTTP workload generator. Among all APIs, ComposePost has the most complex trace graph, with 31 spans in total and a max depth of nine.
+                        </text>
+                    </ProCard>
+                    <Image 
+                        src={introImg}
+                        style={{
+                            width: "100%",
+                            borderRadius: "20px"
+                        }}
+                        >
+                    </Image>
+                </ProCard>
                 <ProCard gutter={16} title="Trace记录">
                     <ProTable 
                         // rowSelection={rowSelection} 
@@ -423,7 +423,6 @@ const Monitor = () => {
                                     // protocol: "Thrift"
                                 })
                                 const list = res?.data?.records
-                                console.log(list, "lll");
                                 setPagination({
                                     ...pagination,
                                     current: params.current || pagination.current,

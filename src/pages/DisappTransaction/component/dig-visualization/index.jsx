@@ -10,10 +10,6 @@ const GraphVisualization = ({ nodes, edges }) => {
         stabilized: false // 布局是否稳定
     });
 
-    useEffect(() => {
-        console.log(nodes, edges, "edge");
-        
-    }, [nodes, edges])
     // 图配置
     const options = {
         autoResize: true,
@@ -201,7 +197,8 @@ const GraphVisualization = ({ nodes, edges }) => {
                     borderRadius: '0.5rem',
                     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                     maxWidth: '250px',
-                    zIndex: 100
+                    zIndex: 100,
+                    color: "black"
                 }}>
                     <h3 className="font-bold mb-2">节点详情</h3>
                     <div className="space-y-2">

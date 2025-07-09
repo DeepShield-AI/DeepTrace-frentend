@@ -14,28 +14,27 @@ import route from "mock/route";
  * @doc https://umijs.org/docs/guides/routes
  */
 export default [
-  {
-    path: '/user',
-    layout: false,
-    routes: [
-      {
-        name: 'login',
-        path: '/user/login',
-        component: './User/Login',
-      },
-    ],
-  },
-  {
-    path: '/welcome',
-    name: 'welcome',
-    icon: 'smile',
-    component: './Welcome',
-    layout: {
-      hideMenu: false,
-      hideNav: false
-    }
-    
-  },
+  // {
+  //   path: '/user',
+  //   layout: false,
+  //   routes: [
+  //     {
+  //       name: 'login',
+  //       path: '/user/login',
+  //       component: './User/Login',
+  //     },
+  //   ],
+  // },
+  // {
+  //   path: '/welcome',
+  //   name: 'welcome',
+  //   icon: 'smile',
+  //   component: './Welcome',
+  //   layout: {
+  //     hideMenu: false,
+  //     hideNav: false
+  //   }
+  // },
   {
     path: '/distributeApp/transaction',
     name: '调用链追踪',
@@ -89,7 +88,7 @@ export default [
   },
   {
     path: '/',
-    redirect: '/welcome',
+    redirect: '/distributeApp/transaction',
   },
   {
     path: '*',

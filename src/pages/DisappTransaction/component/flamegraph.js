@@ -120,8 +120,6 @@ class Flamegraph extends React.Component {
         
         const { selectedChild, data } = this.state;
         
-        console.log(index, selectedChild, data);
-
         if (selectedChild === index) {
             // toggle to normal
             this.setState({
