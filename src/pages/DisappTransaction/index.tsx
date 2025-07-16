@@ -313,6 +313,50 @@ const Monitor = () => {
         onChange: onSelectChange,
     };
 
+    function addNodeLevels(nodes) {
+        // 1. 构建span_id到节点的映射（便于快速查找父/子节点）
+        const spanToNode = {};
+        nodes.forEach(node => {
+            spanToNode[node.span_id] = { ...node }; // 复制节点，避免修改原对象
+        });
+
+        // 2. 找到根节点（parent_id为null的节点）
+        let root = null;
+        for (const node of nodes) {
+            if (node.parent_id === null) {
+                root = spanToNode[node.span_id];
+                break;
+            }
+        }
+
+        if (!root) {
+            throw new Error("未找到根节点（parent_id为null的节点）");
+        }
+
+        // 3. 根节点层级为0
+        root.level = 0;
+
+        // 4. 广度优先遍历（BFS）计算所有节点的层级
+        const queue = [root];
+        while (queue.length > 0) {
+            const currentNode = queue.shift(); // 取出当前层的节点
+
+            // 遍历当前节点的子节点（child_ids中的span_id）
+            currentNode.child_ids.forEach(childSpanId => {
+                const childNode = spanToNode[childSpanId];
+                if (childNode) {
+                    // 子节点层级 = 父节点层级 + 1
+                    childNode.level = currentNode.level + 1;
+                    queue.push(childNode); // 加入队列，用于遍历其下一级子节点
+                }
+            });
+        }
+
+        // 5. 返回添加了level字段的节点数组（保持原数组顺序）
+        return nodes.map(node => spanToNode[node.span_id]);
+    }
+
+
     const getFlamegraphDataByTraceIdFun = async (traceId) => {
         const res = await getFlamegraphDataByTraceId(traceId)
         const spansList = res?.data?.records
@@ -328,6 +372,8 @@ const Monitor = () => {
         setFlameTreeData(spansTree)
 
         // const graphData = convertToGraphStructure(spans)
+        console.log(convertToGraphStructure(spans), "gragra");
+        
         setGraphData(convertToGraphStructure(spans))
         
     }
@@ -459,7 +505,7 @@ const Monitor = () => {
                     {
                         graphData?.nodes && graphData?.edges ? 
                         <GraphVisEGraphVisualizationxample
-                            nodes={graphData.nodes}
+                            nodes={addNodeLevels(graphData.nodes)}
                             edges={graphData.edges}
                         ></GraphVisEGraphVisualizationxample> :
                         <div style={{

@@ -144,7 +144,6 @@ const Monitor = () => {
         const newTopList = chartListTop.filter(item => {
             return item.status == e.target.value 
         })
-        console.log(newTopList, "-----====");
         
         const newBottomList = chartListBottom.filter(item => {
             return item.status == e.target.value
