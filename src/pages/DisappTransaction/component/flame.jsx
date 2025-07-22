@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
-const FlameGraph = ({ data, width = 800, height = 400, minHeight = 18, onClick }) => {
+const FlameGraphMain = ({ data, width = 800, height = 400, minHeight = 18, onClick }) => {
   const svgRef = useRef(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -315,7 +315,7 @@ const getColor = (node, depth) => {
   );
 };
 
-FlameGraph.propTypes = {
+FlameGraphMain.propTypes = {
   data: PropTypes.array.isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
@@ -323,4 +323,4 @@ FlameGraph.propTypes = {
   onClick: PropTypes.func
 };
 
-export default FlameGraph;    
+export default FlameGraphMain;    

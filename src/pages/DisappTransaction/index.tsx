@@ -29,7 +29,6 @@ import OrgChartTree from './component/d3Tree.tsx';
 import { Line } from '@ant-design/charts';
 
 import Chart1 from './component/chart1.tsx';
-// import FlameGraph from './component/flamegraph.js';
 import Flamegraph from './component/flamegraph.js'
 import stacks from "./stack.json"
 import testStacks from "./testStack.json"
@@ -39,13 +38,19 @@ import { convertToGraphStructure } from '@/utils/convert2graph.js';
 
 import { CodeBlock } from 'react-code-blocks';
 
-import FlameGraph from "./component/flame.jsx";
+// import FlameGraphMain from "./component/flame.jsx";
 import FlameGraph2 from "./component/flame2.jsx";
+//火焰图2.0
+import FlameGraph from './component/flametest1.tsx';
 
 import GraphVisEGraphVisualizationxample from './component/dig-visualization/index.jsx';
 
 import {SPAN_OBJ_LIST} from "../../constant"
 import introImg from "../../assets/images/introduce.png"
+
+//测试
+// import {FlameGraph} from 'react-flame-graph';
+// import 'react-flame-graph/dist/styles.css';
 
 
 
@@ -296,14 +301,6 @@ const Monitor = () => {
         pageSize: 10,     // 每页条数
         total: 0,         // 总记录数
     });
-    const onChange = (newValue) => {
-        setValue(newValue);
-    };
-    const onPopupScroll = (e) => {
-        console.log('onPopupScroll', e);
-    };
-
-    
 
     const onSelectChange = (newSelectedRowKeys) => {
         setSelectedRowKeys(newSelectedRowKeys);
@@ -370,9 +367,6 @@ const Monitor = () => {
         })
         const spansTree = transformToTree(spans)
         setFlameTreeData(spansTree)
-
-        // const graphData = convertToGraphStructure(spans)
-        console.log(convertToGraphStructure(spans), "gragra");
         
         setGraphData(convertToGraphStructure(spans))
         
@@ -435,7 +429,7 @@ const Monitor = () => {
             content="调用链追踪"
         >
             <ProCard direction="column" ghost gutter={[0, 16]}>
-                <ProCard collapsible>
+                <ProCard collapsible  defaultCollapsed>
                     <ProCard>   
                         <text style={{fontSize:16}}>
                             SocialNetwork is an end-to-end microservice in DeathStarBench with similar functionality to Twitter or Facebook to share posts, follow friends, view the followed posts, and browse the homepages of others. It consists of 26 individual services, including Nginx as the web server, tens of Thrift microservices for processing business logic, Memcached and Redis for caching, MongoDB for persistent storage, and RebbitMQ for asynchronous messaging. We load the system with Socfb-Reed98 Facebook social network dataset [60] as the social graph and use wrk2 [1] as the HTTP workload generator. Among all APIs, ComposePost has the most complex trace graph, with 31 spans in total and a max depth of nine.
@@ -455,11 +449,6 @@ const Monitor = () => {
                         // rowSelection={rowSelection} 
                         request={async (params, sorter, filter) => {
                             // 表单搜索项会从 params 传入，传递给后端接口。
-                            console.log(params, sorter, filter, "aaa-----");
-                            // return Promise.resolve({
-                            // data: tableListDataSource,
-                            // success: true,
-                            // });
                             try {
                                 const res =  await getDistributeTableData({
                                     ...params,
@@ -499,7 +488,7 @@ const Monitor = () => {
                     />
                 </ProCard>
                 <ProCard style={{
-                    maxHeight: 400,
+                    maxHeight: 600,
                     // minHeight: 300
                 }}>
                     {
@@ -510,10 +499,10 @@ const Monitor = () => {
                         ></GraphVisEGraphVisualizationxample> :
                         <div style={{
                             width: "100%",
-                            height: "100%",
+                            height: "200px",
                             display: "flex",
                             justifyContent: "center",
-                            alignItems: "center"
+                            alignItems: "center",
                         }}>
                             
                             <Card
@@ -527,38 +516,18 @@ const Monitor = () => {
                 <ProCard>
                     {
                         flameTreeData.length ? 
-                        
                         <ProCard>
-                            <ProCard colSpan={17}>
-                                <FlameGraph 
-                                    data={flameTreeData} 
-                                    width={800} 
-                                    height={400}
-                                    onClick={(node) => {
-                                        // console.log(node?.children[0]);
-                                        // const clickObj = node?.children[0]
-                                        // 点击节点添加到右边的列表
-                                        setDescriptionDataBySpanId(node)
-                                        console.log('点击节点:', node)
-                                    }}
-                                />
-                            </ProCard>
-                            <ProCard colSpan={7}>
-                                {
-                                    descriptionData?.length ? 
-                                        <Descriptions 
-                                            size='small' 
-                                            title="Span Info" 
-                                            layout="vertical"  
-                                            items={descriptionData} 
-                                            bordered
-                                        /> : 
-                                        <Card
-                                        >
-                                            <h2>点击火焰图查看Span详情</h2>
-                                        </Card>
-                                }
-                            </ProCard>
+                            
+                            <FlameGraph 
+                                data={flameTreeData[0]} 
+                                // data={stacks}
+                                width={1200} 
+                                height={500}
+                                onClick={(node) => {
+                                    setDescriptionDataBySpanId(node)
+                                    console.log('点击节点:', node)
+                                }}
+                            />
                         </ProCard>
                         :
                         <div style={{
@@ -577,20 +546,6 @@ const Monitor = () => {
 
                     }
                 </ProCard>
-                {/* <ProCard gutter={16} title="Trace flame graph">
-                    <ProCard  style={{height: 420}}>
-                        <svg width={1280} height={420}>
-                            <Flamegraph data={stacks} width={1280} enableClick />
-                        </svg>                    
-                    </ProCard>
-                </ProCard> */}
-                {/* <ProCard gutter={16} title="JSON">
-                    <CodeBlock
-                        language="javascript" // 指定代码语言
-                        text={codeString}
-                        showLineNumbers // 是否显示行号（这是一个布尔属性，不需要赋值）
-                        />
-                </ProCard> */}
             </ProCard>
         </PageContainer>
     )

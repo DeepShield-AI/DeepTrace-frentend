@@ -184,7 +184,7 @@ const GraphVisualization = ({ nodes, edges }) => {
     }, [nodes])
 
     return (
-        <div className="graph-container" style={{ height: '300px', position: 'relative' }}>
+        <div className="graph-container" style={{ height: '600px', position: 'relative' }}>
             {/* 图可视化组件 */}
             <Graph
                 graph={{ nodes: processedNodes, edges }}
