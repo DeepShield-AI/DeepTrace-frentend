@@ -366,6 +366,8 @@ const Monitor = () => {
             }
         })
         const spansTree = transformToTree(spans)
+        console.log(spansTree, "火焰图原始数据--");
+        
         setFlameTreeData(spansTree)
         
         setGraphData(convertToGraphStructure(spans))
@@ -511,7 +513,6 @@ const Monitor = () => {
                             </Card>
                         </div>
                     }
-                    
                 </ProCard>
                 <ProCard>
                     {
