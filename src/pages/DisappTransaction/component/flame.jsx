@@ -287,7 +287,7 @@ const getColor = (node, depth) => {
         >
           <div><strong>{hoveredNode.name}</strong></div>
           <div>Value: {hoveredNode.value}</div>
-          {hoveredNode.depth !== undefined && <div>Depth: {hoveredNode.depth}</div>}
+          {hoveredNode.depth !== undefined && <div>Depth : {hoveredNode.depth}</div>}
         </div>
       )}
       

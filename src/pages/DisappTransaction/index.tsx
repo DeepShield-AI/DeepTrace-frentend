@@ -296,6 +296,7 @@ const Monitor = () => {
     const [descriptionData, setDescriptionData] = useState([])
     const [graphData, setGraphData] = useState({})
     const [value, setValue] = useState();
+    const [relationData, setRelationData] = useState({})
     const [pagination, setPagination] = useState({
         current: 1,       // 当前页码
         pageSize: 10,     // 每页条数
@@ -312,6 +313,8 @@ const Monitor = () => {
 
     function addNodeLevels(nodes) {
         // 1. 构建span_id到节点的映射（便于快速查找父/子节点）
+        console.log(nodes, "nodes2");
+        
         const spanToNode = {};
         nodes.forEach(node => {
             spanToNode[node.span_id] = { ...node }; // 复制节点，避免修改原对象
@@ -357,21 +360,24 @@ const Monitor = () => {
     const getFlamegraphDataByTraceIdFun = async (traceId) => {
         const res = await getFlamegraphDataByTraceId(traceId)
         const spansList = res?.data?.records
+        const relationData = res?.data?.data
+        
         const spans = spansList.map((spans_ori) => {
             return {
             ...spans_ori.metric,
             ...spans_ori.content,
             ...spans_ori.context,
-            ...spans_ori.tag.ebpf_tag
+            ...spans_ori.tag.ebpf_tag,
+            ...spans_ori.tag.docker_tag
             }
         })
         const spansTree = transformToTree(spans)
-        console.log(spansTree, "火焰图原始数据--");
+        console.log(spans, spansTree,relationData, "火焰图原始数据--");
         
         setFlameTreeData(spansTree)
         
         setGraphData(convertToGraphStructure(spans))
-        
+        setRelationData(relationData)
     }
 
     const getDistributeTableDataFun = async (data) => {
@@ -498,6 +504,7 @@ const Monitor = () => {
                         <GraphVisEGraphVisualizationxample
                             nodes={addNodeLevels(graphData.nodes)}
                             edges={graphData.edges}
+                            relationData={relationData}
                         ></GraphVisEGraphVisualizationxample> :
                         <div style={{
                             width: "100%",
