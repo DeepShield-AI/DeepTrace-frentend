@@ -6,8 +6,8 @@ import {
 
 // mock接口数据
 let isMock = false
-// const serverIp = "http://114.215.254.187:8080"
-const serverIp = "http://localhost:8080"
+const serverIp = "http://114.215.254.187:8080"
+// const serverIp = "http://localhost:8080"
 
 
 const getAllOverView = async () => {
