@@ -71,9 +71,9 @@ const TimeBasedFlameGraph = ({
   };
 
   // 监听宽度变化
-  useEffect(() => {
-    setShowTexts(width >= 0);
-  }, [width]);
+  // useEffect(() => {
+  //   setShowTexts(width >= 0);
+  // }, [width]);
 
   // useEffect(() => {
   //   console.log(data, "火焰");
@@ -88,7 +88,7 @@ const TimeBasedFlameGraph = ({
     zoomG.selectAll('*').remove();
     axesG.selectAll('*').remove();
     
-    if (!data) return;
+    if (!data || !data.children) return; 
     
     // 计算绘图区域
     const plotWidth = width - margin.left - margin.right;
@@ -101,7 +101,12 @@ const TimeBasedFlameGraph = ({
     let minStartTime = Infinity;
     let maxEndTime = -Infinity;
     
+    
     root.descendants().forEach(node => {
+      if (typeof node.data.start_time !== 'number' || isNaN(node.data.start_time)) {
+      console.error('Invalid start_time in node:', node.data);
+      return; // 跳过无效节点
+    }
       const start = node.data.start_time;
       const end = start + node.data.value;
       
@@ -170,21 +175,38 @@ const TimeBasedFlameGraph = ({
       .data(root.descendants())
       .enter()
       .append('g')
-      .attr('transform', d => {
-        const originalHeight = levelHeight;
-        const newHeight = originalHeight * barHeightRatio;
-        const verticalOffset = (originalHeight - newHeight) / 2;
+      // .attr('transform', d => {
+      //   const originalHeight = levelHeight;
+      //   const newHeight = originalHeight * barHeightRatio;
+      //   const verticalOffset = (originalHeight - newHeight) / 2;
         
-        return `translate(${xScale(d.data.start_time)},${yScale(d.depth) + verticalOffset})`;
+      //   return `translate(${xScale(d.data.start_time)},${yScale(d.depth) + verticalOffset})`;
+      // })
+      .attr('transform', d => {
+        const start = Number(d.data.start_time);
+        const depth = d.depth;
+        
+        // 添加双重保护
+        const validStart = isNaN(start) ? 0 : start;
+        const validDepth = isNaN(depth) ? 0 : depth;
+        
+        const barWidth = Math.max(0, xScale(validStart + d.data.value) - xScale(validStart));
+        const verticalOffset = (levelHeight - (levelHeight * barHeightRatio)) / 2;
+        
+        return `translate(${xScale(validStart)},${yScale(validDepth) + verticalOffset})`;
       })
       .classed('selected', d => selectedNode === d);
     
     // 添加矩形（移除边框）
     const rects = cells.append('rect')
       .attr('width', d => {
-        const start = d.data.start_time;
-        const end = start + d.data.value;
-        return Math.max(1, xScale(end) - xScale(start));
+        const start = Number(d.data.start_time);
+        const value = Number(d.data.value);
+        if (isNaN(start) || isNaN(value)) return 0; // 无效数据时宽度为0
+        const end = start + value;
+        const startX = xScale(start);
+        const endX = xScale(end);
+        return Math.max(1, endX - startX); // 确保至少1px，避免0宽度
       })
       .attr('height', levelHeight * barHeightRatio)
       .attr('fill', d => `url(#${getGradientId(d.depth)})`)
