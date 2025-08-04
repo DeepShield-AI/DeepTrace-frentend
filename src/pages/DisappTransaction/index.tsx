@@ -372,7 +372,7 @@ const Monitor = () => {
             }
         })
         const spansTree = transformToTree(spans)
-        console.log(spans, spansTree,relationData, "火焰图原始数据--");
+        console.log(spans, spansTree, "火焰图原始数据--");
         
         setFlameTreeData(spansTree)
         

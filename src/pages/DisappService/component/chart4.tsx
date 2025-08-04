@@ -47,7 +47,6 @@ const Chart4 = () => {
           // const {id} = config
           // const model = item.getModel();
           // console.log(evt,id, "evtevt");
-          console.log(evt,id, "evtevt");
           // 携带URL跳转
           window.location.href = `http://localhost:8000/distributeApp/transaction?nodeQuery=${id}`
         });
