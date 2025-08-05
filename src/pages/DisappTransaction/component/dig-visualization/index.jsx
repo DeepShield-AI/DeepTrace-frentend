@@ -1,249 +1,4 @@
-// import React, { useState, useCallback, useEffect } from 'react';
-// import Graph from 'react-graph-vis';
-
-// const GraphVisualization = ({ nodes, edges, relationData }) => {
-//     // 状态管理
-//     const [graphState, setGraphState] = useState({
-//         selectedNode: null,
-//         selectedEdge: null,
-//         physicsEnabled: true, // 物理引擎状态
-//         stabilized: false // 布局是否稳定
-//     });
-
-//     // 根据层级获取颜色
-//     const getLevelColor = (level) => {
-//         const colors = [
-//             '#F59556', // 第0层
-//             '#48C0C1', // 第1层
-//             '#4E90E8', // 第2层
-//             '#F11F16', // 第3层
-//             '#E76378', // 第4层
-//             '#74BB48', // 第5层
-//             '#6F7DA3', // 第6层
-//             '#f3f3f3', // 第7层及以上的默认颜色
-//         ];
-//         return level < colors.length ? colors[level] : colors[colors.length - 1];
-//     };
-
-//     // 预处理节点数据，设置层级颜色和使用container_name作为标签
-//     const processedNodes = nodes.map(node => {
-//         const level = node.level || 0;
-//         return {
-//             ...node,
-//             label: node.container_name[0] || node.label || node.title || node.id, // 使用container_name作为主要标签
-//             color: {
-//                 ...node.color,
-//                 background: getLevelColor(level),
-//                 highlight: {
-//                     ...(node.color?.highlight || {}),
-//                     background: getLevelColor(level) === '#f0f0f0' ? '#e0e0e0' : getLevelColor(level)
-//                 }
-//             }
-//         };
-//     });
-
-//     // 图配置
-//     const options = {
-//         autoResize: true,
-//         height: '100%',
-//         width: '100%',
-//         layout: {
-//             hierarchical: {
-//                 enabled: true,
-//                 direction: 'LR', // 从左到右
-//                 sortMethod: 'directed', // 有向排序
-//                 nodeSpacing: 90,
-//                 levelSeparation: 300,
-//                 treeSpacing: 100
-//             },
-//             randomSeed: 42
-//         },
-//         nodes: {
-//             shape: 'box', // 将节点形状从 'dot' 改为 'box'
-//             widthConstraint: {
-//                 maximum: 200, // 限制节点最大宽度
-//                 minimum: 80   // 限制节点最小宽度
-//             },
-//             font: {
-//                 size: 14,
-//                 color: '#fff',
-//                 align: 'center' // 文字居中对齐
-//             },
-//             borderWidth: 2,
-//             borderWidthSelected: 3,
-//             borderRadius: 40,
-//             color: {
-//                 background: '#f0f0f0', // 节点背景色
-//                 border: '#000',        // 节点边框色
-//                 borderRadius: 20,
-//                 highlight: {
-//                     background: '#e0e0e0', // 选中时的背景色
-//                     border: '#333'         // 选中时的边框色
-//                 }
-//             },
-//             margin: 10 // 文字与边框的间距
-//         },
-//         edges: {
-//             width: 1,
-//             borderRadius: 20,
-//             color: {
-//                 color: '#999',
-//                 highlight: '#555'
-//             },
-//             arrows: {
-//                 to: { enabled: true, scaleFactor: 0.8 }
-//             }
-//         },
-//         physics: {
-//             enabled: false, // 完全禁用物理引擎
-//             stabilization: {
-//                 enabled: false // 禁用稳定化过程
-//             }
-//         },
-//         interaction: {
-//             hover: true,
-//             selectConnectedEdges: true,
-//             tooltipDelay: 200
-//         },
-//         manipulation: {
-//             enabled: false // 禁用默认操作
-//         }
-//     };
-
-//     // 事件处理
-//     const events = {
-//         select: useCallback((event) => {
-//             const { nodes, edges } = event;
-//             setGraphState(prev => ({
-//                 ...prev,
-//                 selectedNode: nodes[0] || null,
-//                 selectedEdge: edges[0] || null
-//             }));
-//         }, []),
-//         doubleClick: useCallback((event) => {
-//             // 双击固定/解锁节点
-//             const { nodes } = event;
-//             if (nodes.length > 0) {
-//                 const nodeId = nodes[0];
-//                 const updatedNodes = [...processedNodes].map(node => {
-//                     if (node.id === nodeId) {
-//                         return {
-//                             ...node,
-//                             fixed: !node.fixed // 切换固定状态
-//                         };
-//                     }
-//                     return node;
-//                 });
-//                 // 更新节点数据
-//                 setGraphState(prev => ({ ...prev, nodes: updatedNodes }));
-//             }
-//         }, [processedNodes]),
-//         stabilizationIterationsDone: useCallback(() => {
-//             // 布局稳定后自动暂停物理引擎
-//             setGraphState(prev => ({ ...prev, stabilized: true }));
-//         }, [])
-//     };
-
-//     // 切换物理引擎状态
-//     const togglePhysics = useCallback(() => {
-//         setGraphState(prev => ({
-//             ...prev,
-//             physicsEnabled: !prev.physicsEnabled
-//         }));
-//     }, []);
-
-//     // 重置布局
-//     const resetLayout = useCallback(() => {
-//         setGraphState(prev => ({
-//             ...prev,
-//             physicsEnabled: true,
-//             stabilized: false
-//         }));
-//     }, []);
-
-//     // 固定所有节点
-//     const fixAllNodes = useCallback(() => {
-//         const updatedNodes = [...processedNodes].map(node => ({
-//             ...node,
-//             fixed: true
-//         }));
-//         setGraphState(prev => ({ ...prev, nodes: updatedNodes }));
-//     }, [processedNodes]);
-
-//     // 解锁所有节点
-//     const unfixAllNodes = useCallback(() => {
-//         const updatedNodes = [...processedNodes].map(node => ({
-//             ...node,
-//             fixed: false
-//         }));
-//         setGraphState(prev => ({ ...prev, nodes: updatedNodes }));
-//     }, [processedNodes]);
-
-
-//     return (
-//         <div className="graph-container" style={{ height: '600px', position: 'relative' }}>
-//             {/* 图可视化组件 */}
-//             <Graph
-//                 graph={{ nodes: processedNodes, edges }}
-//                 options={options}
-//                 events={events}
-//                 getNetwork={(network) => {
-//                     // 可选：获取网络实例以进行更多操作
-//                     // console.log('Network instance:', network);
-//                 }}
-//             />
-
-//             {/* 节点信息面板 */}
-//             {graphState.selectedNode !== null && (
-//                 <div className="node-info-panel" style={{
-//                     position: 'absolute',
-//                     top: 10,
-//                     right: 10,
-//                     backgroundColor: 'white',
-//                     padding: '1rem',
-//                     borderRadius: '0.5rem',
-//                     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-//                     maxWidth: '250px',
-//                     zIndex: 100,
-//                     color: "black"
-//                 }}>
-//                     <h3 className="font-bold mb-2">节点详情</h3>
-//                     <div className="space-y-2">
-//                         {processedNodes.find(node => node.id === graphState.selectedNode)?.container_name[0] && (
-//                             <div>
-//                                 <span className="text-gray-500 text-sm">容器名称:</span>
-//                                 <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.container_name[0]}</div>
-//                             </div>
-//                         )}
-//                         {processedNodes.find(node => node.id === graphState.selectedNode)?.title && (
-//                             <div>
-//                                 <span className="text-gray-500 text-sm">端点:</span>
-//                                 <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.title}</div>
-//                             </div>
-//                         )}
-//                         {processedNodes.find(node => node.id === graphState.selectedNode)?.label && (
-//                             <div>
-//                                 <span className="text-gray-500 text-sm">组件:</span>
-//                                 <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.label}</div>
-//                             </div>
-//                         )}
-//                         {processedNodes.find(node => node.id === graphState.selectedNode)?.protocol && (
-//                             <div>
-//                                 <span className="text-gray-500 text-sm">Protocol:</span>
-//                                 <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.protocol}</div>
-//                             </div>
-//                         )}
-//                     </div>
-//                 </div>
-//             )}
-//         </div>
-//     );
-// };
-
-// export default GraphVisualization;    
-
-
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Graph from 'react-graph-vis';
 
 const GraphVisualization = ({ relationData }) => {
@@ -252,19 +7,50 @@ const GraphVisualization = ({ relationData }) => {
         selectedNode: null,
         selectedEdge: null,
         physicsEnabled: true,
-        stabilized: false
+        stabilized: false,
+        highlightedEdges: new Set()  // 新增：存储高亮边的ID
     });
+
+    // 使用 ref 存储图实例
+    const networkRef = useRef(null);
 
     // 根据层级获取颜色
     const getLevelColor = (level) => {
         const colors = [
-            '#F59556', '#48C0C1', '#4E90E8', '#F11F16', 
-            '#E76378', '#74BB48', '#6F7DA3', '#f3f3f3'
+            '#440154', '#3e4989', '#31688e', '#26828e', 
+            '#21918c', '#74BB48', '#6F7DA3', '#f3f3f3'
         ];
         return level < colors.length ? colors[level] : colors[colors.length - 1];
     };
 
-    // 从 relationData 生成节点和边，并计算层级
+    // 递归处理嵌套的拓扑结构，生成边
+    const processTopology = (topology, adjacencyList, inDegree, edges, components) => {
+        const traverse = (source, targets) => {
+            if (typeof targets !== 'object' || targets === null) return;
+            
+            Object.keys(targets).forEach(targetId => {
+                if (components[source] && components[targetId]) {
+                    const edgeId = `${source}-${targetId}`;
+                    edges.push({
+                        id: edgeId,  // 确保每条边都有唯一ID
+                        from: source,
+                        to: targetId,
+                        label: '',
+                        arrows: { to: { enabled: true } }
+                    });
+                    adjacencyList[source].push(targetId);
+                    inDegree[targetId] = (inDegree[targetId] || 0) + 1;
+                    traverse(targetId, targets[targetId]);
+                }
+            });
+        };
+        
+        Object.entries(topology).forEach(([sourceId, targets]) => {
+            traverse(sourceId, targets);
+        });
+    };
+
+    // 生成图数据
     const generateGraphData = useCallback(() => {
         if (!relationData || !relationData.components || !relationData.topology) {
             return { nodes: [], edges: [] };
@@ -273,37 +59,18 @@ const GraphVisualization = ({ relationData }) => {
         const { components, topology } = relationData;
         const nodes = [];
         const edges = [];
-        const nodeLevels = {}; // 存储每个节点的层级
+        const nodeLevels = {};
 
-        // 构建邻接表和入度表
         const adjacencyList = {};
         const inDegree = {};
-
-        // 初始化邻接表和入度表
         Object.keys(components).forEach(id => {
             adjacencyList[id] = [];
             inDegree[id] = 0;
         });
 
-        // 填充邻接表和入度表
-        Object.entries(topology).forEach(([sourceId, targets]) => {
-            Object.keys(targets).forEach(targetId => {
-                if (components[sourceId] && components[targetId]) {
-                    adjacencyList[sourceId].push(targetId);
-                    inDegree[targetId] = (inDegree[targetId] || 0) + 1;
-                    edges.push({
-                        from: sourceId,
-                        to: targetId,
-                        label: '',
-                        arrows: { to: { enabled: true } }
-                    });
-                }
-            });
-        });
+        processTopology(topology, adjacencyList, inDegree, edges, components);
 
-        // 使用BFS计算层级
         const queue = [];
-        // 入度为0的节点作为根节点，层级为0
         Object.keys(inDegree).forEach(nodeId => {
             if (inDegree[nodeId] === 0) {
                 nodeLevels[nodeId] = 0;
@@ -311,14 +78,12 @@ const GraphVisualization = ({ relationData }) => {
             }
         });
 
-        // 处理没有入度为0的节点的情况
         if (queue.length === 0) {
             const firstNodeId = Object.keys(components)[0];
             nodeLevels[firstNodeId] = 0;
             queue.push(firstNodeId);
         }
 
-        // BFS遍历计算层级
         while (queue.length > 0) {
             const currentNode = queue.shift();
             adjacencyList[currentNode].forEach(neighbor => {
@@ -333,15 +98,15 @@ const GraphVisualization = ({ relationData }) => {
             });
         }
 
-        // 处理组件为节点，添加计算出的层级
         Object.entries(components).forEach(([id, component]) => {
             nodes.push({
                 id,
-                label: component.name[0] || id,
-                title: component.endpoint,
-                protocol: component.protocol,
+                name: component.name[0] || id,
+                endpoint: component.endpoint || 'N/A',
+                ip: component.ip || 'N/A',
+                protocol: component.protocol || 'N/A',
                 container_name: component.name,
-                level: nodeLevels[id] || 0 // 使用计算出的层级或默认0
+                level: nodeLevels[id] || 0
             });
         });
 
@@ -350,15 +115,61 @@ const GraphVisualization = ({ relationData }) => {
 
     // 预处理节点数据
     const { nodes, edges } = generateGraphData();
+    
+    // 高亮与节点相关的边
+    const highlightRelatedEdges = useCallback((nodeId) => {
+        if (!networkRef.current) return;
+        
+        const connectedEdges = networkRef.current.getConnectedEdges(nodeId);
+        setGraphState(prev => ({
+            ...prev,
+            highlightedEdges: new Set(connectedEdges)
+        }));
+    }, []);
+
+    // 预处理节点（添加高亮状态）
     const processedNodes = nodes.map(node => {
         const level = node.level || 0;
+        
+        const labelLines = [
+            `服务：${node.name}`,
+            `Endpotint: ${node.endpoint}`,
+            `IP: ${node.ip}`,
+            `Protocol: ${node.protocol}`
+        ].filter(Boolean);
+        
         return {
             ...node,
+            label: labelLines.join('\n\n'),
+            font: {
+                useHTML: true,
+                multi: true
+            },
             color: {
                 background: getLevelColor(level),
                 highlight: {
                     background: getLevelColor(level) === '#f0f0f0' ? '#e0e0e0' : getLevelColor(level)
                 }
+            },
+            borderWidth: graphState.selectedNode === node.id ? 3 : 0,  // 选中节点加边框
+            borderColor: graphState.selectedNode === node.id ? '#ff9800' : undefined
+        };
+    });
+
+    // 预处理边（添加高亮状态）
+    const processedEdges = edges.map(edge => {
+        const isHighlighted = graphState.highlightedEdges.has(edge.id);
+        
+        return {
+            ...edge,
+            color: {
+                color: isHighlighted ? '#ff9800' : '#999',
+                highlight: isHighlighted ? '#ff9800' : '#555'
+            },
+            width: isHighlighted ? 3 : 1,  // 高亮边加粗
+            smooth: {
+                type: 'curvedCW',
+                roundness: 0.2
             }
         };
     });
@@ -373,35 +184,65 @@ const GraphVisualization = ({ relationData }) => {
                 enabled: true,
                 direction: 'LR',
                 sortMethod: 'directed',
-                nodeSpacing: 90,
-                levelSeparation: 300,
-                treeSpacing: 100
+                nodeSpacing: 180,
+                levelSeparation: 500,
+                treeSpacing: 200,
+                startPosition: 'center'
             },
             randomSeed: 42
         },
         nodes: {
             shape: 'box',
-            widthConstraint: { maximum: 200, minimum: 80 },
-            font: { size: 14, color: '#fff', align: 'center' },
-            borderWidth: 2,
-            borderWidthSelected: 3,
-            borderRadius: 40,
-            margin: 10
+            widthConstraint: { 
+                maximum: 420,
+                minimum: 180
+            },
+            borderWidth: 0,
+            borderWidthSelected: 0,
+            margin: 30,
+            font: { 
+                size: 12,
+                color: '#fff', 
+                align: 'center',
+                multi: true,
+                lineHeight: 2.0,
+                useHTML: true
+            },
+            borderRadius: 10,
+            shapeProperties: {
+                interpolation: false,
+                useBorderWithImage: false,
+            }
         },
         edges: {
             width: 1,
             borderRadius: 20,
             color: { color: '#999', highlight: '#555' },
-            arrows: { to: { enabled: true, scaleFactor: 0.8 } }
+            arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+            font: {
+                size: 10,
+                color: '#666',
+                strokeWidth: 0,
+                align: 'top'
+            },
+            selectionWidth: 2,
+            hoverWidth: 1.5
         },
         physics: {
             enabled: false,
-            stabilization: { enabled: false }
+            stabilization: { 
+                enabled: true,
+                iterations: 1000,
+                fit: true
+            }
         },
         interaction: {
             hover: true,
             selectConnectedEdges: true,
-            tooltipDelay: 200
+            tooltipDelay: 200,
+            multiselect: false,
+            zoomView: true,
+            dragView: true
         },
         manipulation: { enabled: false }
     };
@@ -410,12 +251,25 @@ const GraphVisualization = ({ relationData }) => {
     const events = {
         select: useCallback((event) => {
             const { nodes, edges } = event;
+            const selectedNode = nodes[0] || null;
+            
             setGraphState(prev => ({
                 ...prev,
-                selectedNode: nodes[0] || null,
+                selectedNode,
                 selectedEdge: edges[0] || null
             }));
-        }, []),
+            
+            // 高亮相关边
+            if (selectedNode) {
+                highlightRelatedEdges(selectedNode);
+            } else {
+                setGraphState(prev => ({
+                    ...prev,
+                    highlightedEdges: new Set()
+                }));
+            }
+        }, [highlightRelatedEdges]),
+        
         doubleClick: useCallback((event) => {
             const { nodes } = event;
             if (nodes.length > 0) {
@@ -429,8 +283,14 @@ const GraphVisualization = ({ relationData }) => {
                 setGraphState(prev => ({ ...prev, nodes: updatedNodes }));
             }
         }, [processedNodes]),
+        
         stabilizationIterationsDone: useCallback(() => {
             setGraphState(prev => ({ ...prev, stabilized: true }));
+        }, []),
+        
+        // 存储网络实例
+        getNetwork: useCallback((network) => {
+            networkRef.current = network;
         }, [])
     };
 
@@ -453,16 +313,19 @@ const GraphVisualization = ({ relationData }) => {
         setGraphState(prev => ({ ...prev, nodes: updatedNodes }));
     }, [processedNodes]);
 
-    useEffect(() => {
-        console.log(nodes, "nodes");
-    }, [nodes]);
-
     return (
-        <div className="graph-container" style={{ height: '600px', position: 'relative' }}>
+        <div className="graph-container" style={{ 
+            height: '500px', 
+            position: 'relative',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+        }}>
             <Graph
-                graph={{ nodes: processedNodes, edges }}
+                graph={{ nodes: processedNodes, edges: processedEdges }}
                 options={options}
                 events={events}
+                getNetwork={events.getNetwork}
             />
 
             {/* 节点信息面板 */}
@@ -471,43 +334,117 @@ const GraphVisualization = ({ relationData }) => {
                     position: 'absolute',
                     top: 10,
                     right: 10,
-                    backgroundColor: 'white',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     padding: '1rem',
                     borderRadius: '0.5rem',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                     maxWidth: '250px',
                     zIndex: 100,
-                    color: "black"
+                    color: "black",
+                    border: '1px solid #eee'
                 }}>
-                    <h3 className="font-bold mb-2">节点详情</h3>
+                    <h3 className="font-bold mb-2" style={{ 
+                        color: '#333', 
+                        borderBottom: '1px solid #eee',
+                        paddingBottom: '0.5rem'
+                    }}>
+                        节点详情
+                    </h3>
                     <div className="space-y-2">
-                        {processedNodes.find(node => node.id === graphState.selectedNode)?.container_name?.[0] && (
+                        {processedNodes.find(node => node.id === graphState.selectedNode)?.name && (
                             <div>
-                                <span className="text-gray-500 text-sm">容器名称:</span>
-                                <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.container_name[0]}</div>
+                                <span className="text-gray-500 text-sm" style={{ display: 'block' }}>名称:</span>
+                                <div className="font-medium" style={{ marginBottom: '0.5rem' }}>
+                                    {processedNodes.find(node => node.id === graphState.selectedNode)?.name}
+                                </div>
                             </div>
                         )}
-                        {processedNodes.find(node => node.id === graphState.selectedNode)?.title && (
+                        {processedNodes.find(node => node.id === graphState.selectedNode)?.container_name?.[0] && (
                             <div>
-                                <span className="text-gray-500 text-sm">端点:</span>
-                                <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.title}</div>
+                                <span className="text-gray-500 text-sm" style={{ display: 'block' }}>容器名称:</span>
+                                <div className="font-medium" style={{ marginBottom: '0.5rem' }}>
+                                    {processedNodes.find(node => node.id === graphState.selectedNode)?.container_name[0]}
+                                </div>
+                            </div>
+                        )}
+                        {processedNodes.find(node => node.id === graphState.selectedNode)?.endpoint && (
+                            <div>
+                                <span className="text-gray-500 text-sm" style={{ display: 'block' }}>端点:</span>
+                                <div className="font-medium" style={{ marginBottom: '0.5rem' }}>
+                                    {processedNodes.find(node => node.id === graphState.selectedNode)?.endpoint}
+                                </div>
+                            </div>
+                        )}
+                        {processedNodes.find(node => node.id === graphState.selectedNode)?.ip && (
+                            <div>
+                                <span className="text-gray-500 text-sm" style={{ display: 'block' }}>IP地址:</span>
+                                <div className="font-medium" style={{ marginBottom: '0.5rem' }}>
+                                    {processedNodes.find(node => node.id === graphState.selectedNode)?.ip}
+                                </div>
                             </div>
                         )}
                         {processedNodes.find(node => node.id === graphState.selectedNode)?.protocol && (
                             <div>
-                                <span className="text-gray-500 text-sm">协议:</span>
-                                <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.protocol}</div>
+                                <span className="text-gray-500 text-sm" style={{ display: 'block' }}>协议:</span>
+                                <div className="font-medium" style={{ marginBottom: '0.5rem' }}>
+                                    {processedNodes.find(node => node.id === graphState.selectedNode)?.protocol}
+                                </div>
                             </div>
                         )}
                         {processedNodes.find(node => node.id === graphState.selectedNode)?.level !== undefined && (
                             <div>
-                                <span className="text-gray-500 text-sm">层级:</span>
-                                <div className="font-medium">{processedNodes.find(node => node.id === graphState.selectedNode)?.level}</div>
+                                <span className="text-gray-500 text-sm" style={{ display: 'block' }}>层级:</span>
+                                <div className="font-medium">
+                                    {processedNodes.find(node => node.id === graphState.selectedNode)?.level}
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
             )}
+            
+            {/* 控制面板 */}
+            {/* <div className="graph-controls" style={{
+                position: 'absolute',
+                bottom: 10,
+                left: 10,
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                padding: '0.5rem',
+                borderRadius: '0.5rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                zIndex: 100,
+                display: 'flex',
+                gap: '0.5rem'
+            }}>
+                <button 
+                    onClick={togglePhysics}
+                    className="control-btn"
+                    style={{
+                        padding: '0.3rem 0.6rem',
+                        background: graphState.physicsEnabled ? '#4CAF50' : '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {graphState.physicsEnabled ? '禁用物理' : '启用物理'}
+                </button>
+                <button 
+                    onClick={resetLayout}
+                    className="control-btn"
+                    style={{
+                        padding: '0.3rem 0.6rem',
+                        background: '#2196F3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    重置布局
+                </button>
+            </div> */}
         </div>
     );
 };
