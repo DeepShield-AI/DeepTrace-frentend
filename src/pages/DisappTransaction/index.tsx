@@ -495,10 +495,12 @@ const Monitor = () => {
                         // onChange={handlePageChange}
                     />
                 </ProCard>
-                <ProCard style={{
-                    maxHeight: 600,
-                    // minHeight: 300
-                }}>
+                <ProCard 
+                    title={"调用拓扑"}
+                    style={{
+                        maxHeight: 600,
+                        // minHeight: 300
+                    }}>
                     {
                         graphData?.nodes && graphData?.edges ? 
                         <GraphVisEGraphVisualizationxample
@@ -524,7 +526,9 @@ const Monitor = () => {
                 <ProCard>
                     {
                         flameTreeData.length ? 
-                        <ProCard>
+                        <ProCard
+                            title="火焰图"
+                        >
                             
                             <FlameGraph 
                                 data={flameTreeData[0]} 

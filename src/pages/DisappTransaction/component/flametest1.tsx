@@ -5,13 +5,12 @@ const TimeBasedFlameGraph = ({
   data, 
   width = 1200, 
   height = 400, 
-  margin = { top: 15, right: 20, bottom: 40, left: 20 },  // 增加底部边距以容纳X轴
+  margin = { top: 15, right: 20, bottom: 15, left: 20 },  // 减少底部边距
   barHeightRatio = 0.85, 
   textHideThreshold = 600 
 }) => {
   const svgRef = useRef();
-  const flameGraphGRef = useRef();  // 重命名zoomGRef为flameGraphGRef
-  const axesGRef = useRef();
+  const flameGraphGRef = useRef();
   const containerRef = useRef();
   const [hoveredNode, setHoveredNode] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -53,7 +52,7 @@ const TimeBasedFlameGraph = ({
 
   // 格式化时间显示（带ms单位）
   const formatDuration = (value) => {
-    return `${formatValue(value)} ms`;
+    return `${formatValue(value / 1000)} μs`;
   };
 
   // 计算tooltip位置
@@ -105,7 +104,7 @@ const TimeBasedFlameGraph = ({
     // 计算文本位置，防止超出图表边界
     let textX = xPos;
     // 测量文本宽度
-    const timeText = `${formatValue(currentTime)} ms`;
+    const timeText = `${formatValue(currentTime / 1000)} μs`;
     const textWidth = measureTextWidth(timeText, '11px');
     
     // 如果文本会超出右侧边界，则向左调整
@@ -133,11 +132,9 @@ const TimeBasedFlameGraph = ({
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     const flameGraphG = d3.select(flameGraphGRef.current);
-    const axesG = d3.select(axesGRef.current);
     
     // 清理现有内容
     flameGraphG.selectAll('*').remove();
-    axesG.selectAll('*').remove();
     
     if (!data || !data.children) return; 
     
@@ -364,24 +361,6 @@ const TimeBasedFlameGraph = ({
       return textWidth + 50 < d.barWidth ? durationText : '';
     });
     
-    // 创建X轴
-    const xAxis = d3.axisBottom(xScale)
-      .tickFormat(d => formatValue(d));
-    
-    axesG.append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${height - margin.bottom})`)
-      .call(xAxis);
-    
-    // 添加X轴标题
-    axesG.append("text")
-      .attr("class", "axis-title")
-      .attr("x", width / 2)
-      .attr("y", height - 5)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#666")
-      .text("时间 (ms)");
-    
     // 鼠标交互
     rects
       .on('mouseover', (event, d) => {
@@ -495,7 +474,7 @@ const TimeBasedFlameGraph = ({
             <span style={{ fontWeight: '500', color: '#fff' }}>持续时间:</span> {formatDuration(tooltip.node.data.value)}
           </div>
           <div style={{ marginBottom: '6px', color: '#ddd' }}>
-            <span style={{ fontWeight: '500', color: '#fff' }}>起始时间:</span> {formatValue(tooltip.node.data.start_time)}
+            <span style={{ fontWeight: '500', color: '#fff' }}>起始时间:</span> {formatValue(tooltip.node.data.start_time / 1000)} us
           </div>
           <div style={{ marginBottom: '6px', color: '#ddd' }}>
             <span style={{ fontWeight: '500', color: '#fff' }}>深度:</span> {tooltip.node.depth}
@@ -545,8 +524,6 @@ const TimeBasedFlameGraph = ({
             .name-text { font-weight: 500; }
             .container-text { font-weight: normal; opacity: 0.9; }
             .duration-text { font-family: monospace; } /* 等宽字体，对齐更整齐 */
-            .axis-title { font-size: 12px; font-weight: bold; }
-            .x-axis text { font-size: 11px; fill: #666; }
             .flame-graph-container g.selected rect {
               stroke: #4CAF50 !important;
               stroke-width: 2.5px !important;
@@ -567,7 +544,6 @@ const TimeBasedFlameGraph = ({
             `}
           </style>
         </defs>
-        <g ref={axesGRef} />
         <g ref={flameGraphGRef} transform={`translate(0,${margin.top})`} />
         
         {/* 竖线和时间数值显示 */}
@@ -593,11 +569,9 @@ const TimeBasedFlameGraph = ({
               height="20"
               rx="3"
               ry="3"
-              // fill="rgba(255,255,255,0.9)"
               stroke="#ddd"
               strokeWidth="0.5"
               filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
-              
               style={{padding: 5}}
             />
             
@@ -610,9 +584,8 @@ const TimeBasedFlameGraph = ({
               fontSize="11px"
               fontWeight="500"
               fontFamily="monospace"
-              color='#ffffff'
             >
-              {formatValue(verticalLine.time)} ms
+              {formatValue(verticalLine.time / 1000)} μs
             </text>
           </g>
         )}
