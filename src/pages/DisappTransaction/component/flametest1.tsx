@@ -87,7 +87,7 @@ const TimeBasedFlameGraph = ({
     return ctx.measureText(text).width;
   };
 
-  // 处理鼠标移动事件（显示竖线）
+  // 处理鼠标移动事件（显示竖线和数值）
   const handleMouseMove = (event) => {
     if (!svgRef.current || !timeRange[1]) return;
     
@@ -102,13 +102,30 @@ const TimeBasedFlameGraph = ({
     // 获取当前时间值
     const currentTime = xScale.invert(xPos);
     
+    // 计算文本位置，防止超出图表边界
+    let textX = xPos;
+    // 测量文本宽度
+    const timeText = `${formatValue(currentTime)} ms`;
+    const textWidth = measureTextWidth(timeText, '11px');
+    
+    // 如果文本会超出右侧边界，则向左调整
+    if (textX + textWidth / 2 > width - margin.right) {
+      textX = width - margin.right - textWidth / 2;
+    }
+    // 如果文本会超出左侧边界，则向右调整
+    if (textX - textWidth / 2 < margin.left) {
+      textX = margin.left + textWidth / 2;
+    }
+    
     setVerticalLine({
       x: xPos,
+      textX: textX,
+      textWidth: textWidth,
       time: currentTime
     });
   };
 
-  // 处理鼠标离开事件（隐藏竖线）
+  // 处理鼠标离开事件（隐藏竖线和数值）
   const handleMouseLeave = () => {
     setVerticalLine(null);
   };
@@ -543,36 +560,61 @@ const TimeBasedFlameGraph = ({
               to { opacity: 1; transform: translateY(0); }
             }
             .flame-tooltip { animation: fadeIn 0.2s ease forwards; }
+            .time-indicator {
+              transition: all 0.1s ease-out;
+              animation: fadeIn 0.2s ease-out;
+            }
             `}
           </style>
         </defs>
         <g ref={axesGRef} />
-        <g ref={flameGraphGRef} transform={`translate(${margin.left},${margin.top})`} />
+        <g ref={flameGraphGRef} transform={`translate(0,${margin.top})`} />
         
-        {/* 竖线 */}
+        {/* 竖线和时间数值显示 */}
         {verticalLine && (
-          <>
+          <g className="time-indicator" pointerEvents="none">
+            {/* 竖线 */}
             <line
               x1={verticalLine.x}
               y1={margin.top}
               x2={verticalLine.x}
               y2={height - margin.bottom}
-              stroke="#999"
-              strokeWidth="1"
-              strokeDasharray="3,3"
-              pointerEvents="none"
+              stroke="#e74c3c"
+              strokeWidth="1.5"
+              strokeDasharray="4,3"
+              opacity="0.8"
             />
-            <text
-              x={verticalLine.x}
+            
+            {/* 数值背景框 */}
+            <rect
+              x={verticalLine.textX - verticalLine.textWidth / 2 - 6}
               y={margin.top - 15}
+              width={verticalLine.textWidth + 30}
+              height="20"
+              rx="3"
+              ry="3"
+              // fill="rgba(255,255,255,0.9)"
+              stroke="#ddd"
+              strokeWidth="0.5"
+              filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+              
+              style={{padding: 5}}
+            />
+            
+            {/* 时间数值文本 */}
+            <text
+              x={verticalLine.textX + 10}
+              y={margin.top - 1}
               textAnchor="middle"
-              fill="#666"
-              fontSize="10px"
-              pointerEvents="none"
+              fill="#ffffff"
+              fontSize="11px"
+              fontWeight="500"
+              fontFamily="monospace"
+              color='#ffffff'
             >
               {formatValue(verticalLine.time)} ms
             </text>
-          </>
+          </g>
         )}
       </svg>
     </div>

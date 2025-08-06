@@ -530,7 +530,7 @@ const Monitor = () => {
                                 data={flameTreeData[0]} 
                                 // data={stacks}
                                 width={1200} 
-                                height={500}
+                                height={400}
                                 onClick={(node) => {
                                     setDescriptionDataBySpanId(node)
                                     console.log('点击节点:', node)
