@@ -362,7 +362,7 @@ const Monitor = () => {
         const spansList = res?.data?.records
         const relationData = res?.data?.data
         
-        const spans = spansList.map((spans_ori) => {
+        const spans = spansList?.map((spans_ori) => {
             return {
             ...spans_ori.metric,
             ...spans_ori.content,

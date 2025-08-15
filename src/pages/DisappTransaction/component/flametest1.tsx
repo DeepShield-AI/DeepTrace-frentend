@@ -4,10 +4,12 @@ import * as d3 from 'd3';
 const TimeBasedFlameGraph = ({ 
   data, 
   width = 1200, 
-  height = 400, 
-  margin = { top: 15, right: 20, bottom: 15, left: 20 },  // 减少底部边距
+  height = 600, 
+  margin = { top: 15, right: 20, bottom: 15, left: 20 },
+  barHeight = 30,  // 固定行高，不改变
   barHeightRatio = 0.85, 
-  textHideThreshold = 600 
+  textHideThreshold = 600,
+  maxRowsPerLevel = 3  // 每个深度层级允许的最大行数
 }) => {
   const svgRef = useRef();
   const flameGraphGRef = useRef();
@@ -18,8 +20,8 @@ const TimeBasedFlameGraph = ({
   const [tooltip, setTooltip] = useState(null);
   const [timeRange, setTimeRange] = useState([0, 0]);
   const [showTexts, setShowTexts] = useState(width >= textHideThreshold);
-  const [verticalLine, setVerticalLine] = useState(null);  // 竖线状态
-
+  const [verticalLine, setVerticalLine] = useState(null);
+  
   // 防抖处理文本显示状态
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,7 +31,7 @@ const TimeBasedFlameGraph = ({
     return () => clearTimeout(timer);
   }, [width, textHideThreshold]);
 
-  // 生成基于深度的渐变颜色
+  // 生成基于深度的渐变颜色 - 保持原有颜色体系
   const getGradientId = (depth) => `gradient-${depth}`;
   
   const getStartColor = (depth) => {
@@ -39,7 +41,7 @@ const TimeBasedFlameGraph = ({
   
   const getEndColor = (depth) => {
     const color = d3.interpolateViridis(depth / 10);
-    return d3.color(color).toString();
+    return d3.color(color).darker(0.2).toString();
   };
 
   // 格式化数值显示
@@ -50,7 +52,7 @@ const TimeBasedFlameGraph = ({
     });
   };
 
-  // 格式化时间显示（带ms单位）
+  // 格式化时间显示
   const formatDuration = (value) => {
     return `${formatValue(value / 1000)} μs`;
   };
@@ -103,15 +105,13 @@ const TimeBasedFlameGraph = ({
     
     // 计算文本位置，防止超出图表边界
     let textX = xPos;
-    // 测量文本宽度
     const timeText = `${formatValue(currentTime / 1000)} μs`;
     const textWidth = measureTextWidth(timeText, '11px');
     
-    // 如果文本会超出右侧边界，则向左调整
+    // 调整文本位置避免超出边界
     if (textX + textWidth / 2 > width - margin.right) {
       textX = width - margin.right - textWidth / 2;
     }
-    // 如果文本会超出左侧边界，则向右调整
     if (textX - textWidth / 2 < margin.left) {
       textX = margin.left + textWidth / 2;
     }
@@ -129,6 +129,62 @@ const TimeBasedFlameGraph = ({
     setVerticalLine(null);
   };
 
+  // 检测并分配行号以避免重叠
+  const assignRowNumbers = (nodes) => {
+    // 按深度分组
+    const nodesByDepth = {};
+    nodes.forEach(node => {
+      const depth = node.depth;
+      if (!nodesByDepth[depth]) {
+        nodesByDepth[depth] = [];
+      }
+      nodesByDepth[depth].push(node);
+    });
+
+    // 为每个深度的节点分配行号
+    Object.keys(nodesByDepth).forEach(depth => {
+      const depthNodes = nodesByDepth[depth];
+      // 按开始时间排序
+      depthNodes.sort((a, b) => a.data.start_time - b.data.start_time);
+      
+      // 跟踪每行的结束时间
+      const rowEndTimes = [];
+      
+      depthNodes.forEach(node => {
+        const startTime = node.data.start_time;
+        const endTime = startTime + node.data.value;
+        
+        // 尝试找到可以放置当前节点的行
+        let assignedRow = -1;
+        for (let i = 0; i < rowEndTimes.length; i++) {
+          // 如果当前行的最后一个节点结束时间 <= 当前节点的开始时间，没有重叠
+          if (rowEndTimes[i] <= startTime) {
+            assignedRow = i;
+            rowEndTimes[i] = endTime;
+            break;
+          }
+        }
+        
+        // 如果没有找到合适的行且未超过最大行数限制，则创建新行
+        if (assignedRow === -1 && rowEndTimes.length < maxRowsPerLevel) {
+          assignedRow = rowEndTimes.length;
+          rowEndTimes.push(endTime);
+        } else if (assignedRow === -1) {
+          // 如果超过最大行数限制，使用最后一行（可能会有轻微重叠）
+          assignedRow = rowEndTimes.length - 1;
+          rowEndTimes[assignedRow] = Math.max(rowEndTimes[assignedRow], endTime);
+        }
+        
+        node.row = assignedRow;
+      });
+      
+      // 记录当前深度的最大行数
+      nodesByDepth[depth].maxRows = rowEndTimes.length;
+    });
+    
+    return nodesByDepth;
+  };
+
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     const flameGraphG = d3.select(flameGraphGRef.current);
@@ -144,12 +200,36 @@ const TimeBasedFlameGraph = ({
     
     // 创建层次结构
     const root = d3.hierarchy(data);
+    const allNodes = root.descendants();
+    
+    // 分配行号以避免重叠
+    const nodesByDepth = assignRowNumbers(allNodes);
+    
+    // 计算每个深度的最大行数
+    const maxRowsByDepth = {};
+    Object.keys(nodesByDepth).forEach(depth => {
+      maxRowsByDepth[depth] = nodesByDepth[depth].maxRows || 1;
+    });
+    
+    // 计算每个深度的总高度（行数 × 行高）- 使用固定行高
+    const depthHeights = {};
+    let totalHeight = 0;
+    
+    Object.keys(nodesByDepth).forEach((depth) => {
+      const rows = maxRowsByDepth[depth] || 1;
+      depthHeights[depth] = {
+        rows,
+        height: rows * barHeight,  // 使用固定行高
+        yOffset: totalHeight
+      };
+      totalHeight += rows * barHeight + 5; // 增加行间距
+    });
     
     // 计算时间范围
     let minStartTime = Infinity;
     let maxEndTime = -Infinity;
     
-    root.descendants().forEach(node => {
+    allNodes.forEach(node => {
       if (typeof node.data.start_time !== 'number' || isNaN(node.data.start_time)) {
         console.warn('Invalid start_time, using default 0 for node:', node.data);
       }
@@ -168,16 +248,6 @@ const TimeBasedFlameGraph = ({
       .domain([minStartTime, maxEndTime])
       .range([margin.left, width - margin.right]);
     
-    // 计算层级高度
-    const totalLevels = root.height + 1;
-    const baseLevelHeight = plotHeight / totalLevels;
-    const levelHeight = baseLevelHeight * 0.5;
-    
-    // 创建Y轴比例尺
-    const yScale = d3.scaleLinear()
-      .domain([0, totalLevels])
-      .range([margin.top, margin.top + totalLevels * levelHeight]);
-    
     // 创建渐变定义和悬停阴影滤镜
     const defs = svg.select("defs");
     defs.selectAll("*").remove();
@@ -195,8 +265,8 @@ const TimeBasedFlameGraph = ({
       .attr("stdDeviation", 3)
       .attr("flood-color", "rgba(0,0,0,0.3)");
     
-    // 为每个深度创建渐变
-    const uniqueDepths = new Set(root.descendants().map(d => d.depth));
+    // 为每个深度创建渐变（保持原有颜色体系）
+    const uniqueDepths = new Set(allNodes.map(d => d.depth));
     uniqueDepths.forEach(depth => {
       const gradient = defs.append("linearGradient")
         .attr("id", getGradientId(depth))
@@ -219,23 +289,29 @@ const TimeBasedFlameGraph = ({
     
     // 创建火焰图矩形组
     const cells = flameGraphG.selectAll('g')
-      .data(root.descendants())
+      .data(allNodes)
       .enter()
       .append('g')
       .attr('transform', d => {
         const start = Number(d.data.start_time);
         const depth = d.depth;
+        const row = d.row || 0;
         
         const validStart = isNaN(start) ? 0 : start;
         const validDepth = isNaN(depth) ? 0 : depth;
         
-        const verticalOffset = (levelHeight - (levelHeight * barHeightRatio)) / 2;
+        // 计算垂直位置：深度偏移 + 行偏移 - 使用固定行高
+        const depthInfo = depthHeights[validDepth] || { yOffset: 0, rows: 1 };
+        const yPos = margin.top + depthInfo.yOffset + (row * barHeight);
         
-        return `translate(${xScale(validStart)},${yScale(validDepth) + verticalOffset})`;
+        // 添加垂直偏移使条居中
+        const verticalOffset = (barHeight - (barHeight * barHeightRatio)) / 2;
+        
+        return `translate(${xScale(validStart)},${yPos + verticalOffset})`;
       })
       .classed('selected', d => selectedNode === d);
     
-    // 添加矩形（计算宽度并存储为数据属性）
+    // 添加矩形
     const rects = cells.append('rect')
       .attr('width', d => {
         const start = Number(d.data.start_time);
@@ -248,7 +324,7 @@ const TimeBasedFlameGraph = ({
         d.barWidth = barWidth; // 存储宽度供文本使用
         return barWidth;
       })
-      .attr('height', levelHeight * barHeightRatio)
+      .attr('height', barHeight * barHeightRatio)  // 使用固定行高计算高度
       .attr('fill', d => `url(#${getGradientId(d.depth)})`)
       .attr('opacity', d => (selectedNode && (d === selectedNode || d.ancestors().includes(selectedNode))) ? 1 : 0.8)
       .attr('stroke', 'none')
@@ -257,10 +333,10 @@ const TimeBasedFlameGraph = ({
       .attr('transition', 'all 0.2s ease')
       .style('cursor', 'pointer');
     
-    // 添加主文本（节点名称）- 左侧
+    // 添加主文本（节点名称）- 上半部分
     const nameTexts = cells.append('text')
       .attr('x', 4)
-      .attr('y', (levelHeight * barHeightRatio) * 0.3)
+      .attr('y', (barHeight * barHeightRatio) * 0.35)  // 上半部分
       .attr('dy', '0.35em')
       .attr('fill', 'white')
       .attr('font-size', width < 800 ? '10px' : '11px')
@@ -275,7 +351,7 @@ const TimeBasedFlameGraph = ({
       
       const nameText = d.data.name;
       const fontSize = width < 800 ? '10px' : '11px';
-      const availableWidth = d.barWidth - 60; // 预留右侧duration空间
+      const availableWidth = d.barWidth - 60; // 预留右侧空间
       
       if (availableWidth <= 0) return '';
       
@@ -294,10 +370,10 @@ const TimeBasedFlameGraph = ({
       return truncateAt > 0 ? truncated : '';
     });
     
-    // 添加容器名称文本 - 中间
+    // 添加容器名称文本 - 中间部分
     const containerTexts = cells.append('text')
       .attr('x', 4)
-      .attr('y', (levelHeight * barHeightRatio) * 0.7)
+      .attr('y', (barHeight * barHeightRatio) * 0.65)  // 中间部分
       .attr('dy', '0.35em')
       .attr('fill', '#f0f0f0')
       .attr('font-size', width < 800 ? '9px' : '10px')
@@ -332,18 +408,18 @@ const TimeBasedFlameGraph = ({
       return truncateAt > 0 ? truncated : '';
     });
     
-    // 添加Duration文本（右侧显示，带ms单位）
+    // 添加Duration文本（μs）- 右侧，垂直居中
     const durationTexts = cells.append('text')
-      .attr('x', d => d.barWidth - 4) // 右对齐，距离右侧4px
-      .attr('y', (levelHeight * barHeightRatio) * 0.5) // 垂直居中
+      .attr('x', d => d.barWidth - 4)
+      .attr('y', (barHeight * barHeightRatio) * 0.5)  // 垂直居中
       .attr('dy', '0.35em')
       .attr('fill', 'white')
       .attr('font-size', width < 800 ? '9px' : '10px')
       .attr('font-weight', '500')
       .attr('pointer-events', 'none')
-      .attr('text-anchor', 'end') // 右对齐
+      .attr('text-anchor', 'end')
       .attr('class', 'flame-text duration-text')
-      .attr('opacity', 0.9); // 略透明，避免与主文本冲突
+      .attr('opacity', 0.9);
     
     durationTexts.text(d => {
       if (!showTexts) return '';
@@ -351,14 +427,14 @@ const TimeBasedFlameGraph = ({
       if (isNaN(duration)) return '';
       
       // 条宽度过窄时不显示
-      if (d.barWidth < 30) return '';
+      if (d.barWidth < 40) return '';
       
       const durationText = formatDuration(duration);
       const fontSize = width < 800 ? '9px' : '10px';
       const textWidth = measureTextWidth(durationText, fontSize);
       
-      // 确保文本不会与左侧文本重叠（预留至少10px间距）
-      return textWidth + 50 < d.barWidth ? durationText : '';
+      // 确保文本不会与左侧文本重叠（增加间距避免重叠）
+      return textWidth + 70 < d.barWidth ? durationText : '';
     });
     
     // 鼠标交互
@@ -392,6 +468,8 @@ const TimeBasedFlameGraph = ({
       .on('click', (event, d) => {
         if (selectedNode !== d) {
           setSelectedNode(d);
+        } else {
+          setSelectedNode(null); // 再次点击取消选择
         }
       });
     
@@ -408,13 +486,12 @@ const TimeBasedFlameGraph = ({
     data, 
     width, 
     height, 
-    margin.top,
-    margin.right,
-    margin.bottom,
-    margin.left,
+    margin,
     selectedNode, 
+    barHeight,  // 加入依赖，确保行高变化时重新渲染
     barHeightRatio, 
-    showTexts
+    showTexts,
+    maxRowsPerLevel
   ]);
 
   return (
@@ -428,7 +505,7 @@ const TimeBasedFlameGraph = ({
         justifyContent: "center", 
         alignItems: "center",
         width: '100%',
-        overflow: 'hidden',
+        overflow: 'auto',
         fontFamily: 'Segoe UI, Roboto, sans-serif',
         backgroundColor: 'transparent',
         padding: '15px',
@@ -499,7 +576,7 @@ const TimeBasedFlameGraph = ({
       
       <canvas ref={textMeasurementRef} style={{ display: 'none' }} />
       
-      <svg 
+      <svg
         ref={svgRef}
         width={width}
         height={height}
@@ -523,7 +600,7 @@ const TimeBasedFlameGraph = ({
             }
             .name-text { font-weight: 500; }
             .container-text { font-weight: normal; opacity: 0.9; }
-            .duration-text { font-family: monospace; } /* 等宽字体，对齐更整齐 */
+            .duration-text { font-family: monospace; }
             .flame-graph-container g.selected rect {
               stroke: #4CAF50 !important;
               stroke-width: 2.5px !important;
@@ -544,7 +621,7 @@ const TimeBasedFlameGraph = ({
             `}
           </style>
         </defs>
-        <g ref={flameGraphGRef} transform={`translate(0,${margin.top})`} />
+        <g ref={flameGraphGRef} />
         
         {/* 竖线和时间数值显示 */}
         {verticalLine && (
@@ -569,10 +646,10 @@ const TimeBasedFlameGraph = ({
               height="20"
               rx="3"
               ry="3"
+              fill="#333"
               stroke="#ddd"
               strokeWidth="0.5"
               filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
-              style={{padding: 5}}
             />
             
             {/* 时间数值文本 */}
@@ -594,4 +671,4 @@ const TimeBasedFlameGraph = ({
   );
 };
 
-export default TimeBasedFlameGraph;
+export default TimeBasedFlameGraph;        

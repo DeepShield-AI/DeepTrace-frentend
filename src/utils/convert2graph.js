@@ -9,7 +9,7 @@ function convertToGraphStructure(data) {
     const edges = [];
     
     // 第一步：处理所有节点数据
-    data.forEach(item => {
+    data?.forEach(item => {
         const { span_id, component, endpoint } = item;
         
         // 为span_id分配唯一的数字ID

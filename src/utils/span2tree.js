@@ -11,7 +11,7 @@ function transformToTree(spans) {
     //     ...spans_ori.tag.ebpf_tag
     //     }
     // })
-    spans.forEach(span => {
+    spans?.forEach(span => {
         const node = {
             name: span?.endpoint,
             value: span?.duration || 1, // 使用duration作为value，如果没有则默认为1
@@ -24,7 +24,7 @@ function transformToTree(spans) {
     
     
     // 第二步：构建树结构
-    spans.forEach(span => {        
+    spans?.forEach(span => {        
         const node = map.get(span.span_id);
         if (!node) return;
         
@@ -39,7 +39,7 @@ function transformToTree(spans) {
     
     // 第三步：找到根节点（parent_id为null或不存在于span_id中的节点）
     const rootNodes = [];
-    spans.forEach(span => {
+    spans?.forEach(span => {
         if (span.parent_id === null || !map.has(span.parent_id)) {
             const rootNode = map.get(span.span_id);
             if (rootNode) {
