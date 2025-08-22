@@ -38,8 +38,9 @@ import { convertToGraphStructure } from '@/utils/convert2graph.js';
 
 import { CodeBlock } from 'react-code-blocks';
 
-// import FlameGraphMain from "./component/flame.jsx";
+import FlameGraphMain from "./component/flame.jsx";
 import FlameGraph2 from "./component/flame2.jsx";
+
 //火焰图2.0
 import FlameGraph from './component/flametest1.tsx';
 
@@ -56,132 +57,8 @@ import introImg from "../../assets/images/introduce.png"
 
 // 请求方法
 import { getDistributeTableData, getFlamegraphDataByTraceId } from "../../services/server.js"
-import { render } from '@testing-library/react';
-const codeString = `
-const data = {
-    {
-        traceId: '1a2b3c4d',
-        server: 'productcatalogservice',
-        client: 'recommendationservice-7fdcbbf66c-prdcs',
-        protocol: 'HTTP2',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'otel-agent-scdrw',
-        client: 'checkoutservice-7f69d98578-rk5fc',
-        protocol: 'HTTP2',
-        latency: '467μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'otel-agent',
-        client: 'paymentservice-6df5f8595f-8pjtm',
-        protocol: 'HTTP2',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'shippingservice-686df85ddc-csvx9',
-        client: 'frontend-7b49dcdd95-mrvqx',
-        protocol: 'gRPC',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'productcatalogservice-69948c768c-qnls5',
-        client: 'recommendationservice-7fdcbbf66c-prdcs',
-        protocol: 'gRPC',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: '169.254.25.10',
-        client: 'frontend-7b49dcdd95-mrvqx',
-        protocol: 'DNS',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: '169.254.25.10',
-        client: 'frontend-7b49dcdd95-mrvqx',
-        protocol: 'DNS',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'productcatalogservice',
-        client: 'recommendationservice-7fdcbbf66c-prdcs',
-        protocol: 'HTTP2',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: '0.0.0.0',
-        client: 'frontend-7b49dcdd95-mrvqx',
-        protocol: 'gRPC',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'otel-agent-4n555',
-        client: 'productcatalogservice-69948c768c-qnls5',
-        protocol: 'gRPC',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: '169.254.25.10',
-        client: 'checkoutservice-7f69d98578-rk5fc',
-        protocol: 'DNS',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
-    {
-        traceId: '1a2b3c4d',
-        server: 'paymentservice-6df5f8595f-8pjtm',
-        client: 'checkoutservice-7f69d98578-rk5fc',
-        protocol: 'gRPC',
-        latency: '367μs',
-        clienterror: '0%',
-        servererror: '0%',
-        time: '20250101'
-    },
 
-}
- `;
+import { testFlameData } from '@/constant/testFlame.js';
 
 const options = [];
 for (let i = 10; i < 36; i++) {
@@ -436,7 +313,13 @@ const Monitor = () => {
         <PageContainer
             content="调用链追踪"
         >
-            <ProCard direction="column" ghost gutter={[0, 16]}>
+            
+            <ProCard>
+                <FlameGraphMain
+                    data={testFlameData}
+                ></FlameGraphMain>
+            </ProCard>
+            {/* <ProCard direction="column" ghost gutter={[0, 16]}>
                 <ProCard collapsible  defaultCollapsed>
                     <ProCard>   
                         <text style={{fontSize:16}}>
@@ -558,7 +441,7 @@ const Monitor = () => {
 
                     }
                 </ProCard>
-            </ProCard>
+            </ProCard> */}
         </PageContainer>
     )
 }
