@@ -18,7 +18,7 @@ const GraphVisualization = ({ relationData }) => {
     const getLevelColor = (level) => {
         const colors = [
             '#440154', '#3e4989', '#31688e', '#26828e', 
-            '#21918c', '#74BB48', '#6F7DA3', '#f3f3f3'
+            '#239b6bff', '#74BB48', '#6F7DA3', '#f3f3f3'
         ];
         return level < colors.length ? colors[level] : colors[colors.length - 1];
     };
