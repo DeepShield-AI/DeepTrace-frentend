@@ -1,4 +1,175 @@
+/* 树形图样式 */
+.tree-node-container {
+  position: relative;
+}
 
+.tree-node-container:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 1px;
+  background-color: #444;
+  z-index: 1;
+}
+
+.tree-node {
+  position: relative;
+  z-index: 2;
+}
+
+.tree-node:hover {
+  background-color: #2a2a2a !important;
+}
+
+.tree-node.selected {
+  background-color: #333 !important;
+  box-shadow: 0 0 0 2px #1890ff !important;
+}
+
+.tree-children {
+  position: relative;
+}
+
+.tree-children:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: -8px;
+  width: 1px;
+  background-color: #444;
+}
+
+.tree-node-content {
+  transition: transform 0.2s ease;
+}
+
+.tree-node:hover .tree-node-content {
+  transform: translateX(3px);
+}
+
+/* 隐藏滚动条 */
+.tree-container::-webkit-scrollbar {
+  display: none;
+}
+
+.tree-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 节点动画效果 */
+.node {
+  transition: all 0.2s ease;
+}
+
+.node:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+  z-index: 15 !important;
+}
+
+.node.selected {
+  z-index: 20 !important;
+}
+
+/* 搜索框样式 */
+input[type="text"] {
+  outline: none;
+}
+
+input[type="text"]:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+  /* 树形图样式 */
+.tree-node-container {
+  position: relative;
+}
+
+.tree-node-container:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 1px;
+  background-color: #444;
+  z-index: 1;
+}
+
+.tree-node {
+  position: relative;
+  z-index: 2;
+}
+
+.tree-node:hover {
+  background-color: #2a2a2a !important;
+}
+
+.tree-node.selected {
+  background-color: #333 !important;
+  box-shadow: 0 0 0 2px #1890ff !important;
+}
+
+.tree-children {
+  position: relative;
+}
+
+.tree-children:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: -8px;
+  width: 1px;
+  background-color: #444;
+}
+
+.tree-node-content {
+  transition: transform 0.2s ease;
+}
+
+.tree-node:hover .tree-node-content {
+  transform: translateX(3px);
+}
+
+/* 树形图滚动条样式 */
+.tree-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tree-container::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+.tree-container::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.tree-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 节点动画效果 */
+.node {
+  transition: all 0.2s ease;
+}
+
+.node:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+  z-index: 15 !important;
+}
+
+.node.selected {
+  z-index: 20 !important;
+}
   .name-container {
     display: flex;
     flex-direction: column;

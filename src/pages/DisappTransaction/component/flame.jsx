@@ -1,52 +1,62 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import './flame.css';
 
-const FlameGraph = ({ data }) => {
-  // 计算默认展开的前两个层级节点
-  const computeDefaultExpandedNodes = (data) => {
+const FlameGraph = ({ 
+  data, 
+  colors = [
+    '#440154', '#3e4989', '#31688e', '#26828e', 
+    '#239b6bff', '#74BB48', '#6F7DA3', '#f3f3f3'
+  ],
+  timeUnit = 'ms',
+  showTree = true,
+  treeWidth = 300,
+  graphHeight = 650,
+  defaultExpandedLevels = 2,
+  tooltipPosition = 'follow',
+  showtimeTip = false
+}) => {
+  // 计算默认展开的前N个层级节点
+  const computeDefaultExpandedNodes = (data, levels = defaultExpandedLevels) => {
     const defaultExpandedNodes = new Set();
     
+    const traverse = (node, depth) => {
+      if (depth > levels) return;
+      
+      const nodeKey = `${node.name}-${node.start_time}`;
+      defaultExpandedNodes.add(nodeKey);
+      
+      if (node.children && depth < levels) {
+        node.children.forEach(child => traverse(child, depth + 1));
+      }
+    };
+    
     data.forEach(root => {
-      // 展开第一层级节点
       if (root.children) {
-        root.children.forEach(firstLevelNode => {
-          // 使用唯一键标识节点
-          const firstLevelKey = `${firstLevelNode.name}-${firstLevelNode.start_time}`;
-          defaultExpandedNodes.add(firstLevelKey);
-          
-          // 展开第二层级节点
-          if (firstLevelNode.children) {
-            firstLevelNode.children.forEach(secondLevelNode => {
-              const secondLevelKey = `${secondLevelNode.name}-${secondLevelNode.start_time}`;
-              defaultExpandedNodes.add(secondLevelKey);
-            });
-          }
-        });
+        root.children.forEach(child => traverse(child, 1));
       }
     });
     
     return defaultExpandedNodes;
   };
 
-  // 使用函数初始化状态，确保只在组件挂载时计算一次
   const [expandedNodes, setExpandedNodes] = useState(() => computeDefaultExpandedNodes(data));
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [tooltipPositionState, setTooltipPositionState] = useState({ x: 0, y: 0 });
+  
+  // 新增状态：管理悬浮时的时间参考线
+  const [hoverTimePosition, setHoverTimePosition] = useState(0);
+  const [hoverTime, setHoverTime] = useState(0);
+  const [showTimeMarker, setShowTimeMarker] = useState(false);
+  
+  // 新增状态：控制左侧树形图的展开/折叠
+  const [treeExpanded, setTreeExpanded] = useState(true);
+  
   const flameGraphRef = useRef(null);
   const tooltipRef = useRef(null);
+  const timeScaleRef = useRef(null);
   
-  // 为每个层级定义颜色
-  const levelColors = [
-    '#440154', // 层级0 - 根节点
-    '#3e4989', // 层级1
-    '#31688e', // 层级2
-    '#26828e', // 层级3
-    '#239b6bff', // 层级4
-    '#74BB48', // 层级5
-    '#6F7DA3', // 层级6
-    '#f3f3f3'  // 层级7
-  ];
+  const levelColors = colors;
 
   // 计算整个跟踪的时间范围（转换为毫秒）
   const timeRange = useMemo(() => {
@@ -61,7 +71,6 @@ const FlameGraph = ({ data }) => {
     
     data.forEach(traverse);
     
-    // 转换为毫秒并保留2位小数
     return {
       minTime: parseFloat((minTime / 1000).toFixed(2)),
       maxTime: parseFloat((maxTime / 1000).toFixed(2)),
@@ -86,13 +95,12 @@ const FlameGraph = ({ data }) => {
     return `${node.name}-${node.start_time}`;
   };
 
-  // 展平所有节点并计算位置（跳过根节点和没有持续时间的节点）
+  // 展平所有节点并计算位置
   const flattenedNodes = useMemo(() => {
     const nodes = [];
     let rowIndex = 0;
     
     const traverse = (node, depth) => {
-      // 跳过根节点（depth为0）和没有持续时间的节点
       if (depth > 0 && node.duration && node.duration > 0) {
         const nodeKey = generateNodeKey(node);
         const isExpanded = expandedNodes.has(nodeKey);
@@ -106,28 +114,24 @@ const FlameGraph = ({ data }) => {
           position,
           width,
           isExpanded,
-          // 添加毫秒值用于显示
           durationMs: parseFloat((node.duration / 1000).toFixed(2)),
           startTimeMs: parseFloat((node.start_time / 1000).toFixed(2)),
           endTimeMs: parseFloat((node.end_time / 1000).toFixed(2)),
-          nodeKey // 添加唯一键
+          nodeKey
         });
         
         rowIndex++;
       }
       
-      // 如果节点展开且有子节点，继续遍历
       const nodeKey = generateNodeKey(node);
       if (expandedNodes.has(nodeKey) && node.children) {
         node.children.forEach(child => traverse(child, depth + 1));
       }
     };
     
-    // 从根节点的子节点开始遍历（跳过根节点）
     data.forEach(root => {
       if (root.children) {
         root.children.forEach(child => {
-          // 只添加有持续时间的子节点
           if (child.duration && child.duration > 0) {
             traverse(child, 1);
           }
@@ -158,31 +162,81 @@ const FlameGraph = ({ data }) => {
           flexDirection: 'column',
           alignItems: 'center',
           fontSize: '0.8em',
-          color: '#ccc' // 浅灰色文字
+          color: '#ccc'
         }}>
           <div style={{ height: '5px', width: '1px', background: '#999' }}></div>
-          <div>{timeValue.toFixed(2)}ms</div>
+          {showtimeTip && <div>{timeValue.toFixed(2)}{timeUnit}</div>}
         </div>
       );
     }
     
     return (
-      <div style={{
-        position: 'relative',
-        height: '30px',
-        borderBottom: '1px solid #444', // 深色边框
-        marginBottom: '10px'
-      }}>
+      <div 
+        ref={timeScaleRef}
+        style={{
+          position: 'relative',
+          height: '30px',
+          borderBottom: '1px solid #444',
+          marginBottom: '10px',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
         {ticks}
+        
+        {/* 悬停时间参考线 - 改为虚线 */}
+        {showTimeMarker && (
+          <div style={{
+            position: 'absolute',
+            left: `${hoverTimePosition}%`,
+            top: 0,
+            height: '100%',
+            width: '0',
+            borderLeft: '1px dashed #FFD700', // 改为虚线
+            zIndex: 20
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '-22px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(30, 30, 30, 0.9)',
+              color: '#FFD700',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontSize: '0.8em',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              border: '1px solid #555'
+            }}>
+              {hoverTime.toFixed(2)}{timeUnit}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // 处理鼠标悬浮事件
-  const handleMouseEnter = (e, node) => {
+  // 处理时间轴上的鼠标移动
+  const handleTimeScaleMouseMove = (e) => {
+    if (!timeScaleRef.current) return;
+    
+    const rect = timeScaleRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const positionPercentage = (x / rect.width) * 100;
+    
+    // 计算实际时间值
+    const timeValue = timeRange.minTime + (timeRange.range * positionPercentage / 100);
+    
+    setHoverTimePosition(positionPercentage);
+    setHoverTime(timeValue);
+    setShowTimeMarker(true);
+  };
+
+  // 处理节点上的鼠标事件
+  const handleNodeMouseEnter = (e, node) => {
     setHoveredNode(node);
     
-    // 计算工具提示位置
     const tooltipWidth = tooltipRef.current?.offsetWidth || 250;
     const viewportWidth = window.innerWidth;
     const tooltipHeight = tooltipRef.current?.offsetHeight || 150;
@@ -191,32 +245,52 @@ const FlameGraph = ({ data }) => {
     let x = e.clientX + 10;
     let y = e.clientY + 10;
     
-    // 防止工具提示超出屏幕右侧
-    if (x + tooltipWidth > viewportWidth) {
-      x = e.clientX - tooltipWidth - 10;
+    if (tooltipPosition === 'fixed') {
+      // 固定位置在右上角
+      x = viewportWidth - tooltipWidth - 20;
+      y = 20;
+    } else if (tooltipPosition === 'follow') {
+      // 跟随鼠标
+      if (x + tooltipWidth > viewportWidth) {
+        x = e.clientX - tooltipWidth - 10;
+      }
+      
+      if (y + tooltipHeight > viewportHeight) {
+        y = e.clientY - tooltipHeight - 10;
+      }
     }
     
-    // 防止工具提示超出屏幕底部
-    if (y + tooltipHeight > viewportHeight) {
-      y = e.clientY - tooltipHeight - 10;
-    }
+    setTooltipPositionState({ x, y });
     
-    setTooltipPosition({ x, y });
+    // 更新时间标记
+    if (timeScaleRef.current) {
+      const rect = timeScaleRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      
+      if (x >= 0 && x <= rect.width) {
+        const positionPercentage = (x / rect.width) * 100;
+        const timeValue = timeRange.minTime + (timeRange.range * positionPercentage / 100);
+        
+        setHoverTimePosition(positionPercentage);
+        setHoverTime(timeValue);
+        setShowTimeMarker(true);
+      }
+    }
+  };
+
+  const handleNodeMouseLeave = () => {
+    setHoveredNode(null);
   };
 
   // 渲染节点（使用毫秒）
   const renderNode = (node) => {
-    // 根据深度选择颜色
     const color = levelColors[node.depth % levelColors.length];
     
-    // 获取显示名称（name和container_name[0]结合）
     const displayName = node.container_name && node.container_name.length > 0 
       ? `${node.name} (${node.container_name[0]})` 
       : node.name;
     
-    // 计算名称显示方式
     const renderContent = () => {
-      // 宽度足够显示完整名称和持续时间
       if (node.width > 12) {
         return (
           <div className="name-container" style={{ 
@@ -242,12 +316,11 @@ const FlameGraph = ({ data }) => {
               marginLeft: '8px',
               whiteSpace: 'nowrap'
             }}>
-              {node.durationMs}ms
+              {node.durationMs}{timeUnit}
             </div>
           </div>
         );
       } 
-      // 宽度中等，显示缩写名称和持续时间
       else if (node.width > 8) {
         return (
           <div className="name-container" style={{ 
@@ -276,12 +349,11 @@ const FlameGraph = ({ data }) => {
               marginLeft: '4px',
               whiteSpace: 'nowrap'
             }}>
-              {node.durationMs}ms
+              {node.durationMs}{timeUnit}
             </div>
           </div>
         );
       } 
-      // 宽度较小，只显示持续时间
       else if (node.width > 4) {
         return (
           <div className="name-container" style={{ 
@@ -296,12 +368,11 @@ const FlameGraph = ({ data }) => {
               fontWeight: 'bold',
               whiteSpace: 'nowrap'
             }}>
-              {node.durationMs}ms
+              {node.durationMs}{timeUnit}
             </div>
           </div>
         );
       } 
-      // 宽度非常小，不显示任何内容
       else {
         return null;
       }
@@ -347,8 +418,8 @@ const FlameGraph = ({ data }) => {
           }
           setSelectedNode(node);
         }}
-        onMouseEnter={(e) => handleMouseEnter(e, node)}
-        onMouseLeave={() => setHoveredNode(null)}
+        onMouseEnter={(e) => handleNodeMouseEnter(e, node)}
+        onMouseLeave={handleNodeMouseLeave}
       >
         {renderContent()}
         {node.children?.length > 0 && (
@@ -380,27 +451,19 @@ const FlameGraph = ({ data }) => {
   // 渲染概览树（使用毫秒）
   const renderOverviewTree = () => {
     const renderTreeNode = (node, depth = 0) => {
-      // 跳过没有持续时间的节点
       if (!node.duration || node.duration <= 0) return null;
       
       const nodeKey = generateNodeKey(node);
       const isExpanded = expandedNodes.has(nodeKey);
       const isSelected = selectedNode?.nodeKey === nodeKey;
       
-      // 计算毫秒值
       const durationMs = parseFloat((node.duration / 1000).toFixed(2));
       
-      // 获取显示名称（name和container_name[0]结合）
-      const displayName = node.container_name && node.container_name.length > 0 
-        ? `${node.name} (${node.container_name[0]})` 
-        : node.name;
-      
-      // 关键修改：使用与火焰图相同的颜色计算方式
-      // 火焰图中节点深度从1开始，所以这里depth+1
+      const displayName = node.name || (node.container_name && node.container_name[0]);
       const color = levelColors[(depth + 1) % levelColors.length];
       
       return (
-        <div key={nodeKey} style={{ marginLeft: `${depth * 15}px` }}>
+        <div key={nodeKey} className="tree-node-container">
           <div 
             className={`tree-node ${isSelected ? 'selected' : ''}`}
             style={{
@@ -419,7 +482,9 @@ const FlameGraph = ({ data }) => {
               overflow: 'hidden',
               whiteSpace: 'nowrap',
               textOverflow: 'ellipsis',
-              color: '#e0e0e0'
+              color: '#e0e0e0',
+              minWidth: 'fit-content',
+              width: '100%'
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -434,7 +499,6 @@ const FlameGraph = ({ data }) => {
               }
               setSelectedNode({...node, nodeKey});
               
-              // 滚动到对应的火焰图节点
               if (flameGraphRef.current) {
                 const nodeElement = flameGraphRef.current.querySelector(`.node[data-id="${nodeKey}"]`);
                 if (nodeElement) {
@@ -443,23 +507,76 @@ const FlameGraph = ({ data }) => {
               }
             }}
           >
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff' }}>
-                {displayName}
+            <div className="tree-node-content" style={{ 
+              flex: 1, 
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              {/* 添加缩进指示器 */}
+              <div style={{ 
+                width: `${depth * 12}px`, 
+                minWidth: `${depth * 12}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                paddingRight: '4px'
+              }}>
+                {depth > 0 && (
+                  <div style={{ 
+                    height: '1px', 
+                    width: '8px', 
+                    backgroundColor: '#666',
+                    marginRight: '4px'
+                  }}></div>
+                )}
               </div>
-              <div style={{ fontSize: '0.7em', color: '#aaa' }}>
-                {durationMs}ms
+              
+              <div style={{ 
+                flex: 1, 
+                minWidth: '0', 
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                <div style={{ 
+                  fontWeight: 'bold', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis', 
+                  color: '#fff',
+                  fontSize: '0.85em'
+                }}>
+                  {displayName}
+                </div>
+                <div style={{ 
+                  fontSize: '0.75em', 
+                  color: '#aaa',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {durationMs}{timeUnit}
+                </div>
               </div>
             </div>
+            
             {node.children?.length > 0 && (
-              <span style={{ marginLeft: '6px', fontSize: '0.7em', color: '#fff' }}>
+              <span style={{ 
+                marginLeft: '6px', 
+                fontSize: '0.7em', 
+                color: '#fff',
+                minWidth: '16px',
+                textAlign: 'center'
+              }}>
                 {isExpanded ? '▼' : '▶'}
               </span>
             )}
           </div>
           
           {isExpanded && node.children?.length > 0 && (
-            <div>
+            <div className="tree-children" style={{ 
+              marginLeft: '12px',
+              borderLeft: '1px dashed #444',
+              paddingLeft: '8px'
+            }}>
               {node.children.map(child => renderTreeNode(child, depth + 1))}
             </div>
           )}
@@ -474,10 +591,12 @@ const FlameGraph = ({ data }) => {
         padding: '10px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         height: '100%',
-        overflowY: 'auto',
-        width: '250px',
+        overflow: 'hidden',
+        width: `${treeWidth}px`,
         position: 'relative',
-        color: '#e0e0e0'
+        color: '#e0e0e0',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         <div style={{ 
           marginBottom: '10px',
@@ -486,7 +605,8 @@ const FlameGraph = ({ data }) => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          flexShrink: 0
         }}>
           <h3 style={{ 
             margin: 0, 
@@ -498,20 +618,58 @@ const FlameGraph = ({ data }) => {
           }}>
             调用结构概览
           </h3>
-          <div style={{ fontSize: '0.7em', color: '#aaa' }}>
-            点击节点展开/折叠
+          <div style={{ 
+            display: 'flex',
+            gap: '6px',
+            alignItems: 'center'
+          }}>
+            <button 
+              onClick={() => setTreeExpanded(!treeExpanded)}
+              style={{
+                background: 'none',
+                border: '1px solid #444',
+                color: '#e0e0e0',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '0.7em',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {treeExpanded ? '折叠' : '展开'}
+            </button>
           </div>
         </div>
         
         <div className="tree-container" style={{
-          maxHeight: 'calc(100% - 40px)',
-          overflowY: 'auto'
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'auto',
+          display: treeExpanded ? 'block' : 'none'
         }}>
-          {data.map(root => {
-            // 渲染根节点的子节点
-            return root.children?.map(child => renderTreeNode(child, 0));
-          })}
+          <div style={{ 
+            minWidth: '100%',
+            width: 'fit-content',
+            paddingRight: '10px'
+          }}>
+            {data.map(root => {
+              return root.children?.map(child => renderTreeNode(child, 0));
+            })}
+          </div>
         </div>
+        
+        {!treeExpanded && (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#666',
+            fontSize: '0.9em'
+          }}>
+            树形图已折叠
+          </div>
+        )}
       </div>
     );
   };
@@ -520,7 +678,6 @@ const FlameGraph = ({ data }) => {
   const renderTooltip = () => {
     if (!hoveredNode) return null;
     
-    // 获取显示名称（name和container_name[0]结合）
     const displayName = hoveredNode.container_name && hoveredNode.container_name.length > 0 
       ? `${hoveredNode.name} (${hoveredNode.container_name[0]})` 
       : hoveredNode.name;
@@ -531,8 +688,8 @@ const FlameGraph = ({ data }) => {
         className="tooltip"
         style={{
           position: 'fixed',
-          left: `${tooltipPosition.x}px`,
-          top: `${tooltipPosition.y}px`,
+          left: `${tooltipPositionState.x}px`,
+          top: `${tooltipPositionState.y}px`,
           backgroundColor: 'rgba(30, 30, 30, 0.95)',
           color: '#e0e0e0',
           padding: '10px',
@@ -556,17 +713,17 @@ const FlameGraph = ({ data }) => {
         
         <div style={{ marginBottom: '4px', fontSize: '0.9em' }}>
           <span style={{ opacity: 0.7 }}>持续时间: </span>
-          <span style={{ fontWeight: 'bold', color: '#fff' }}>{hoveredNode.durationMs}ms</span>
+          <span style={{ fontWeight: 'bold', color: '#fff' }}>{hoveredNode.durationMs}{timeUnit}</span>
         </div>
         
         <div style={{ marginBottom: '4px', fontSize: '0.9em' }}>
           <span style={{ opacity: 0.7 }}>开始时间: </span>
-          <span>{hoveredNode.startTimeMs}ms</span>
+          <span>{hoveredNode.startTimeMs}{timeUnit}</span>
         </div>
         
         <div style={{ marginBottom: '4px', fontSize: '0.9em' }}>
           <span style={{ opacity: 0.7 }}>结束时间: </span>
-          <span>{hoveredNode.endTimeMs}ms</span>
+          <span>{hoveredNode.endTimeMs}{timeUnit}</span>
         </div>
         
         {hoveredNode.src_ip && (
@@ -609,7 +766,9 @@ const FlameGraph = ({ data }) => {
       boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
       maxWidth: '1400px',
       margin: '0 auto',
-      color: '#e0e0e0'
+      color: '#e0e0e0',
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
         display: 'flex', 
@@ -621,7 +780,7 @@ const FlameGraph = ({ data }) => {
         flexWrap: 'wrap'
       }}>
         <h2 style={{ color: '#fff', margin: 0, fontSize: '1.2em' }}>
-          时间轴火焰图 (单位: ms)
+          时间轴火焰图 (单位: {timeUnit})
         </h2>
         <div style={{ 
           display: 'flex', 
@@ -652,16 +811,20 @@ const FlameGraph = ({ data }) => {
       <div style={{ 
         display: 'flex', 
         gap: '15px',
-        marginBottom: '15px'
+        marginBottom: '15px',
+        width: '100%'
       }}>
-        {/* 左侧概览树 - 固定宽度 */}
-        <div style={{ 
-          flex: '0 0 250px',
-          height: '550px',
-          position: 'relative'
-        }}>
-          {renderOverviewTree()}
-        </div>
+        {/* 左侧概览树 - 可配置是否显示 */}
+        {showTree && (
+          <div style={{ 
+            flex: `0 0 ${treeWidth}px`,
+            height: `${graphHeight}px`,
+            position: 'relative',
+            width: `${treeWidth}px`
+          }}>
+            {renderOverviewTree()}
+          </div>
+        )}
         
         {/* 右侧火焰图 */}
         <div style={{ 
@@ -670,8 +833,14 @@ const FlameGraph = ({ data }) => {
           borderRadius: '8px',
           padding: '15px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          position: 'relative'
-        }}>
+          position: 'relative',
+          width: '100%',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          minWidth: 0
+        }}
+        onMouseLeave={() => setShowTimeMarker(false)}
+        >
           {renderTimeScale()}
           
           <div 
@@ -684,8 +853,11 @@ const FlameGraph = ({ data }) => {
               borderRadius: '4px',
               backgroundColor: '#121212',
               padding: '8px',
-              overflow: 'auto'
+              overflow: 'hidden',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
+            onMouseMove={handleTimeScaleMouseMove}
           >
             {flattenedNodes.map(node => (
               <div 
@@ -696,6 +868,21 @@ const FlameGraph = ({ data }) => {
                 {renderNode(node)}
               </div>
             ))}
+            
+            {/* 全局时间标记 - 改为虚线 */}
+            {showTimeMarker && (
+              <div style={{
+                position: 'absolute',
+                left: `${hoverTimePosition}%`,
+                top: 0,
+                height: '100%',
+                width: '0',
+                borderLeft: '1px dashed #FFD700', // 改为虚线
+                zIndex: 19,
+                pointerEvents: 'none',
+                boxShadow: '0 0 5px rgba(255, 215, 0, 0.7)'
+              }} />
+            )}
           </div>
         </div>
       </div>

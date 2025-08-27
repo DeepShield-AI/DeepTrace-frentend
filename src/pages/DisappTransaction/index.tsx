@@ -314,12 +314,12 @@ const Monitor = () => {
             content="调用链追踪"
         >
             
-            <ProCard>
+            {/* <ProCard>
                 <FlameGraphMain
                     data={testFlameData}
                 ></FlameGraphMain>
-            </ProCard>
-            {/* <ProCard direction="column" ghost gutter={[0, 16]}>
+            </ProCard> */}
+            <ProCard direction="column" ghost gutter={[0, 16]}>
                 <ProCard collapsible  defaultCollapsed>
                     <ProCard>   
                         <text style={{fontSize:16}}>
@@ -413,7 +413,7 @@ const Monitor = () => {
                             title="火焰图"
                         >
                             
-                            <FlameGraph 
+                            {/* <FlameGraph 
                                 data={flameTreeData[0]} 
                                 // data={stacks}
                                 width={1200} 
@@ -422,7 +422,12 @@ const Monitor = () => {
                                     setDescriptionDataBySpanId(node)
                                     console.log('点击节点:', node)
                                 }}
-                            />
+                            /> */}
+                            
+                        <FlameGraphMain
+                            // data={testFlameData}
+                            data={flameTreeData}
+                        ></FlameGraphMain>
                         </ProCard>
                         :
                         <div style={{
@@ -441,7 +446,7 @@ const Monitor = () => {
 
                     }
                 </ProCard>
-            </ProCard> */}
+            </ProCard>
         </PageContainer>
     )
 }
